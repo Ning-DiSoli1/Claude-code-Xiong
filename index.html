@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>山海之凶兽 — XIONG SHOU</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Cinzel:wght@400;600;700&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0b0b0e;
+    --surface: #141418;
+    --border: rgba(255,255,255,0.06);
+    --text: #c4c4c8;
+    --text-dim: #6b6b72;
+    --accent: #c84b31;
+    --gold: #b8936e;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(11,11,14,0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+  }
+  nav .logo {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #fff;
+  }
+  nav .logo span { color: var(--accent); }
+  nav ul { display: flex; list-style: none; gap: 32px; }
+  nav ul li a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+    transition: color 0.3s;
+  }
+  nav ul li a:hover { color: #fff; }
+
+  /* ── Chapter Dropdown ── */
+  .nav-dropdown { position: relative; }
+  .nav-dropdown .arrow { font-size: 0.6rem; margin-left: 2px; }
+  .dropdown-panel {
+    position: absolute;
+    top: 100%; right: 0;
+    margin-top: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    min-width: 420px;
+    display: none;
+    z-index: 101;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .nav-dropdown.open .dropdown-panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+  .dropdown-panel button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.76rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .dropdown-panel button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .dropdown-panel button .count {
+    color: var(--text-dim);
+    font-size: 0.65rem;
+    margin-left: 4px;
+  }
+  .dropdown-panel button.has-art::after {
+    content: ' 🎨';
+    font-size: 0.6rem;
+  }
+
+  .beast-section { position: relative; }
+
+  .hero-full {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 40px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-full::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(200,75,49,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-compact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 140px 40px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-compact::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(200,75,49,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-content { position: relative; z-index: 1; max-width: 800px; }
+  .hero-content .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero-content h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 5rem;
+    font-weight: 700;
+    letter-spacing: 12px;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .hero-content h1 .cn {
+    display: block;
+    font-family: 'Noto Sans SC', serif;
+    font-size: 2rem;
+    font-weight: 300;
+    letter-spacing: 16px;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .hero-compact .hero-content h1 { font-size: 3.8rem; letter-spacing: 8px; }
+  .hero-compact .hero-content h1 .cn { font-size: 1.6rem; letter-spacing: 12px; }
+
+  .hero-content .subtitle { font-size: 1rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 36px; }
+  .hero-content .divider { width: 60px; height: 1px; background: var(--accent); margin: 0 auto 36px; }
+  .hero-content .tags { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+  .tag {
+    padding: 8px 20px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 2px;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .section-inner { padding: 80px 40px; }
+  .section-header { text-align: center; margin-bottom: 56px; }
+  .section-header h2 { font-family: 'Cinzel', serif; font-size: 1.8rem; letter-spacing: 6px; color: #fff; margin-bottom: 12px; }
+  .section-header p { font-size: 0.85rem; color: var(--text-dim); letter-spacing: 1px; }
+
+  .gallery {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .gallery-item {
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--surface);
+    aspect-ratio: 3/4;
+    transition: transform 0.4s ease;
+  }
+  .gallery-item:hover { transform: scale(1.02); }
+  .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.4s; }
+  .gallery-item .overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .gallery-item:hover .overlay { opacity: 1; }
+  .gallery-item .overlay span {
+    color: #fff; font-size: 0.7rem; letter-spacing: 3px;
+    border-bottom: 1px solid rgba(255,255,255,0.4); padding-bottom: 4px;
+  }
+  .gallery-item.feature { grid-column: span 2; aspect-ratio: 16/10; }
+  .gallery-item.feature + .gallery-item { aspect-ratio: 3/4; }
+
+  .render-grid {
+    max-width: 1300px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .render-item {
+    cursor: pointer; overflow: hidden; border-radius: 4px;
+    background: var(--surface); transition: transform 0.4s ease;
+  }
+  .render-item:hover { transform: scale(1.02); }
+  .render-item img { width: 100%; height: auto; display: block; }
+
+  .specs {
+    max-width: 900px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--border); border: 1px solid var(--border);
+    border-radius: 4px; overflow: hidden;
+  }
+  .spec-item { background: var(--surface); padding: 32px 24px; text-align: center; }
+  .spec-item .label { font-size: 0.6rem; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+  .spec-item .value { font-size: 1rem; color: #fff; font-weight: 500; }
+
+  .about-text { max-width: 680px; margin: 0 auto; text-align: center; font-size: 0.9rem; color: var(--text-dim); line-height: 2; }
+  .about-text strong { color: #fff; font-weight: 400; }
+
+  .beast-divider { width: 100%; height: 1px; background: var(--border); }
+
+  .lightbox {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.92);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .lightbox.active { opacity: 1; pointer-events: auto; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 2px; }
+  .lightbox .close {
+    position: absolute; top: 24px; right: 32px;
+    color: #fff; font-size: 2rem; cursor: pointer;
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; transition: background 0.3s;
+  }
+  .lightbox .close:hover { background: rgba(255,255,255,0.1); }
+  .lightbox .counter {
+    position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+    color: var(--text-dim); font-size: 0.7rem; letter-spacing: 2px;
+  }
+  .lightbox .nav-prev, .lightbox .nav-next {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    color: #fff; font-size: 2rem; cursor: pointer;
+    width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; transition: background 0.3s;
+  }
+  .lightbox .nav-prev { left: 32px; }
+  .lightbox .nav-next { right: 32px; }
+  .lightbox .nav-prev:hover, .lightbox .nav-next:hover { background: rgba(255,255,255,0.1); }
+
+  footer {
+    text-align: center; padding: 60px 40px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim); font-size: 0.65rem; letter-spacing: 2px;
+  }
+
+  @media (max-width: 900px) {
+    nav { padding: 0 20px; }
+    nav ul { gap: 16px; }
+    .hero-content h1 { font-size: 3rem; letter-spacing: 6px; }
+    .hero-content h1 .cn { font-size: 1.4rem; letter-spacing: 8px; }
+    .hero-compact .hero-content h1 { font-size: 2.4rem; letter-spacing: 4px; }
+    .hero-compact .hero-content h1 .cn { font-size: 1.2rem; letter-spacing: 6px; }
+    .gallery { grid-template-columns: 1fr; }
+    .gallery-item.feature { grid-column: span 1; aspect-ratio: 3/4; }
+    .render-grid { grid-template-columns: 1fr; }
+    .specs { grid-template-columns: repeat(2, 1fr); }
+    .section-inner { padding: 60px 20px; }
+    .lightbox .nav-prev { left: 12px; }
+    .lightbox .nav-next { right: 12px; }
+    .chat-btn { width: 48px; height: 48px; right: 16px; bottom: 16px; }
+    .chat-panel { right: 8px; bottom: 72px; width: calc(100vw - 16px); max-width: 380px; height: 460px; }
+    .dropdown-panel { min-width: auto; width: calc(100vw - 40px); right: -20px; grid-template-columns: 1fr; }
+  }
+
+  /* ── AI Chat Widget ── */
+  .chat-btn {
+    position: fixed;
+    bottom: 24px; right: 32px;
+    z-index: 150;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 24px var(--accent-glow);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .chat-btn:hover { transform: scale(1.08); box-shadow: 0 6px 32px rgba(200,75,49,0.45); }
+  .chat-btn svg { width: 24px; height: 24px; fill: none; stroke: #fff; stroke-width: 2; }
+  .chat-btn .close-icon { display: none; }
+
+  .chat-panel {
+    position: fixed;
+    bottom: 96px; right: 32px;
+    z-index: 149;
+    width: 380px;
+    height: 520px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity 0.25s, transform 0.25s;
+  }
+  .chat-panel.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .chat-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 6px #4ade80;
+  }
+  .chat-header span {
+    font-size: 0.8rem;
+    color: #fff;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .chat-header small {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+  .msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    animation: msgIn 0.3s ease;
+  }
+  @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .msg.ai {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    border-bottom-left-radius: 3px;
+  }
+  .msg.user {
+    align-self: flex-end;
+    background: rgba(200,75,49,0.18);
+    color: #fff;
+    border-bottom-right-radius: 3px;
+  }
+
+  .chat-input-wrap {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .chat-input-wrap input {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 10px 16px;
+    color: #fff;
+    font-size: 0.8rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .chat-input-wrap input::placeholder { color: var(--text-dim); }
+  .chat-input-wrap input:focus { border-color: rgba(200,75,49,0.5); }
+  .chat-input-wrap button {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .chat-input-wrap button:hover { background: #d45a3f; }
+  .chat-input-wrap button svg { width: 16px; height: 16px; fill: #fff; }
+
+  .chat-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 16px 12px;
+  }
+  .chat-suggestions button {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px 12px;
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .chat-suggestions button:hover { color: #fff; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); }
+
+  /* ── Search Hero ── */
+  .search-hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px 40px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+  .search-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(200,75,49,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .search-hero-content { position: relative; z-index: 1; max-width: 720px; width: 100%; }
+  .search-hero-title {
+    font-family: 'Noto Sans SC', 'Cinzel', serif;
+    font-size: 4rem;
+    font-weight: 300;
+    letter-spacing: 20px;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .search-hero-title span { color: var(--accent); font-weight: 500; }
+  .search-hero-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 48px;
+  }
+
+  .search-hero-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    padding: 7px 7px 7px 24px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    margin-bottom: 24px;
+  }
+  .search-hero-bar:focus-within {
+    border-color: rgba(200,75,49,0.5);
+    box-shadow: 0 0 0 4px rgba(200,75,49,0.08);
+  }
+  .search-hero-bar input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 1rem;
+    font-family: inherit;
+    padding: 12px 0;
+  }
+  .search-hero-bar input::placeholder { color: var(--text-dim); }
+  .search-hero-bar button {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .search-hero-bar button:hover { background: #d45a3f; }
+  .search-hero-bar button svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; }
+
+  .search-hero-hints {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 64px;
+  }
+  .search-hero-hints button {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 7px 16px;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .search-hero-hints button:hover { color: #fff; border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); }
+
+  .search-hero-scroll {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-dim);
+    font-size: 0.62rem;
+    letter-spacing: 3px;
+    animation: fadeDown 2s ease-in-out infinite;
+  }
+  .search-hero-scroll svg { width: 20px; height: 20px; fill: none; stroke: var(--text-dim); stroke-width: 1.5; }
+  @keyframes fadeDown {
+    0%, 100% { opacity: 0.4; transform: translateY(0); }
+    50% { opacity: 1; transform: translateY(6px); }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">X<span>I</span>ONG</div>
+  <ul>
+    <li class="nav-dropdown">
+      <a href="#" id="chapterMenuBtn">山海经卷轴 <span class="arrow">▾</span></a>
+      <div class="dropdown-panel" id="chapterDropdown"></div>
+    </li>
+  </ul>
+</nav>
+
+<!-- ═══ Search Hero ═══ -->
+<section class="search-hero">
+  <div class="search-hero-content">
+    <h1 class="search-hero-title">山<span>海</span></h1>
+    <p class="search-hero-desc">中国神话 IP × 设计师艺术玩具 · 探索上古四凶的写实重构</p>
+    <div class="search-hero-bar">
+      <input type="text" id="heroChatInput" placeholder="向 AI 提问，探索山海之凶兽…" maxlength="200">
+      <button id="heroChatSend" aria-label="发送">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+      </button>
+    </div>
+    <div class="search-hero-hints">
+      <button data-q="穷奇是什么样的异兽？">穷奇是什么样的异兽？</button>
+      <button data-q="介绍一下饕餮">介绍一下饕餮</button>
+      <button data-q="梼杌有什么特点？">梼杌有什么特点？</button>
+      <button data-q="混沌长什么样子？">混沌长什么样子？</button>
+      <button data-q="什么是上古四凶？">什么是上古四凶？</button>
+    </div>
+    <div class="search-hero-scroll">
+      <span>向下探索</span>
+      <svg viewBox="0 0 24 24"><polyline points="6,9 12,15 18,9"/></svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Dynamic Content Area ═══ -->
+<div id="contentArea" style="display:none;min-height:100vh;padding-top:100px;">
+  <div id="chapterContent" class="section-inner"></div>
+</div>
+
+<!-- ═══ 穷奇 QIONGQI (001) ═══ -->
+<section class="beast-section" id="qiongqi" style="display:none;">
+  <div class="hero-full">
+    <div class="hero-content">
+      <div class="eyebrow">山海之凶兽 Collection · 001</div>
+      <h1><span class="cn">穷 奇</span>QIONGQI</h1>
+      <p class="subtitle">上古四凶 · 虎身双翼 · 设计师艺术玩具概念</p>
+      <div class="divider"></div>
+      <div class="tags">
+        <span class="tag">写实风格</span><span class="tag">树脂手办</span><span class="tag">限量发行</span><span class="tag">中国神话</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner">
+    <div class="section-header"><h2>概念设计</h2><p>CONCEPT ART · 穷奇三视图探索</p></div>
+    <div class="gallery">
+      <div class="gallery-item feature" data-src="assets/qiongqi/mmexport1779679541914.png" data-num="01">
+        <img src="assets/qiongqi/mmexport1779679541914.png" alt="穷奇概念设计" loading="lazy">
+        <div class="overlay"><span>概念图</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/qiongqi/穷奇1视图.png" data-num="02">
+        <img src="assets/qiongqi/穷奇1视图.png" alt="穷奇视图 01" loading="lazy">
+        <div class="overlay"><span>VIEW 01</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/qiongqi/穷奇2视图.png" data-num="03">
+        <img src="assets/qiongqi/穷奇2视图.png" alt="穷奇视图 02" loading="lazy">
+        <div class="overlay"><span>VIEW 02</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/qiongqi/穷奇3视图.png" data-num="04">
+        <img src="assets/qiongqi/穷奇3视图.png" alt="穷奇视图 03" loading="lazy">
+        <div class="overlay"><span>VIEW 03</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="section-header"><h2>三维呈现</h2><p>3D RENDER · 数字雕刻预览</p></div>
+    <div class="render-grid">
+      <div class="render-item" data-src="assets/qiongqi/mmexport1779679548453.png" data-num="05">
+        <img src="assets/qiongqi/mmexport1779679548453.png" alt="穷奇三维渲染 01" loading="lazy">
+      </div>
+      <div class="render-item" data-src="assets/qiongqi/mmexport1779679550432.png" data-num="06">
+        <img src="assets/qiongqi/mmexport1779679550432.png" alt="穷奇三维渲染 02" loading="lazy">
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="section-header"><h2>产品规格</h2><p>SPECIFICATIONS</p></div>
+    <div class="specs">
+      <div class="spec-item"><div class="label">高度</div><div class="value">~32 cm</div></div>
+      <div class="spec-item"><div class="label">材质</div><div class="value">PU 树脂</div></div>
+      <div class="spec-item"><div class="label">涂装</div><div class="value">手工上色</div></div>
+      <div class="spec-item"><div class="label">限量</div><div class="value">待定</div></div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="about-text">
+      <p>穷奇，<strong>《山海经·海内北经》</strong>所载上古四凶之一，状如虎而有翼，食人从首之始。</p>
+      <p>本作以写实风格重构经典异兽形象，保留<strong>虎身形体</strong>与<strong>双翼特征</strong>，融合现代数字雕刻技术与传统雕塑审美，探索中国神话 IP 在设计师玩具领域的可能性。</p>
+    </div>
+  </div>
+</section>
+
+<div class="beast-divider"></div>
+
+<!-- ═══ 饕餮 TAOTIE (002) ═══ -->
+<section class="beast-section" id="taotie" style="display:none;">
+  <div class="hero-compact">
+    <div class="hero-content">
+      <div class="eyebrow">山海之凶兽 Collection · 002</div>
+      <h1><span class="cn">饕 餮</span>TAOTIE</h1>
+      <p class="subtitle">上古四凶 · 羊身人面 · 贪食之兽</p>
+      <div class="divider"></div>
+      <div class="tags">
+        <span class="tag">写实风格</span><span class="tag">树脂手办</span><span class="tag">限量发行</span><span class="tag">中国神话</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner">
+    <div class="section-header"><h2>概念设计</h2><p>CONCEPT ART · 饕餮三视图探索</p></div>
+    <div class="gallery">
+      <div class="gallery-item feature" data-src="assets/taotie/饕餮概念图.png" data-num="07">
+        <img src="assets/taotie/饕餮概念图.png" alt="饕餮概念设计" loading="lazy">
+        <div class="overlay"><span>概念图</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/taotie/饕餮1视图.png" data-num="08">
+        <img src="assets/taotie/饕餮1视图.png" alt="饕餮视图 01" loading="lazy">
+        <div class="overlay"><span>VIEW 01</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/taotie/饕餮2视图.png" data-num="09">
+        <img src="assets/taotie/饕餮2视图.png" alt="饕餮视图 02" loading="lazy">
+        <div class="overlay"><span>VIEW 02</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/taotie/饕餮3视图.png" data-num="10">
+        <img src="assets/taotie/饕餮3视图.png" alt="饕餮视图 03" loading="lazy">
+        <div class="overlay"><span>VIEW 03</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="section-header"><h2>产品规格</h2><p>SPECIFICATIONS</p></div>
+    <div class="specs">
+      <div class="spec-item"><div class="label">高度</div><div class="value">待定</div></div>
+      <div class="spec-item"><div class="label">材质</div><div class="value">PU 树脂</div></div>
+      <div class="spec-item"><div class="label">涂装</div><div class="value">手工上色</div></div>
+      <div class="spec-item"><div class="label">限量</div><div class="value">待定</div></div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="about-text">
+      <p>饕餮，<strong>《山海经·北次三经》</strong>所载上古四凶之一，羊身人面，其目在腋下，虎齿人爪，其音如婴儿。</p>
+      <p>本作以写实风格重构这一经典贪食巨兽，突出其<strong>饕餮纹般的威慑气场</strong>，融合现代数字雕刻技术与传统青铜纹饰审美。</p>
+    </div>
+  </div>
+</section>
+
+<div class="beast-divider"></div>
+
+<!-- ═══ 梼杌 TAOWU (003) ═══ -->
+<section class="beast-section" id="taowu" style="display:none;">
+  <div class="hero-compact">
+    <div class="hero-content">
+      <div class="eyebrow">山海之凶兽 Collection · 003</div>
+      <h1><span class="cn">梼 杌</span>TAOWU</h1>
+      <p class="subtitle">上古四凶 · 虎身犬毛 · 顽固凶兽</p>
+      <div class="divider"></div>
+      <div class="tags">
+        <span class="tag">写实风格</span><span class="tag">树脂手办</span><span class="tag">限量发行</span><span class="tag">中国神话</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner">
+    <div class="section-header"><h2>概念设计</h2><p>CONCEPT ART · 梼杌三视图探索</p></div>
+    <div class="gallery">
+      <div class="gallery-item feature" data-src="assets/taowu/梼杌概念图.png" data-num="11">
+        <img src="assets/taowu/梼杌概念图.png" alt="梼杌概念设计" loading="lazy">
+        <div class="overlay"><span>概念图</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/taowu/梼杌1视图.png" data-num="12">
+        <img src="assets/taowu/梼杌1视图.png" alt="梼杌视图 01" loading="lazy">
+        <div class="overlay"><span>VIEW 01</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/taowu/梼杌2视图.png" data-num="13">
+        <img src="assets/taowu/梼杌2视图.png" alt="梼杌视图 02" loading="lazy">
+        <div class="overlay"><span>VIEW 02</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/taowu/梼杌3视图.png" data-num="14">
+        <img src="assets/taowu/梼杌3视图.png" alt="梼杌视图 03" loading="lazy">
+        <div class="overlay"><span>VIEW 03</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="section-header"><h2>产品规格</h2><p>SPECIFICATIONS</p></div>
+    <div class="specs">
+      <div class="spec-item"><div class="label">高度</div><div class="value">待定</div></div>
+      <div class="spec-item"><div class="label">材质</div><div class="value">PU 树脂</div></div>
+      <div class="spec-item"><div class="label">涂装</div><div class="value">手工上色</div></div>
+      <div class="spec-item"><div class="label">限量</div><div class="value">待定</div></div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="about-text">
+      <p>梼杌，<strong>《神异经》</strong>所载上古四凶之一，状如虎而犬毛，人面虎足猪牙，尾长一丈八尺。</p>
+      <p>本作以写实风格呈现其<strong>桀骜不驯之态</strong>，融合现代数字雕刻技术与传统雕塑审美。</p>
+    </div>
+  </div>
+</section>
+
+<div class="beast-divider"></div>
+
+<!-- ═══ 混沌 HUNDUN (004) ═══ -->
+<section class="beast-section" id="hundun" style="display:none;">
+  <div class="hero-compact">
+    <div class="hero-content">
+      <div class="eyebrow">山海之凶兽 Collection · 004</div>
+      <h1><span class="cn">混 沌</span>HUNDUN</h1>
+      <p class="subtitle">上古四凶 · 无面无形 · 混沌美学</p>
+      <div class="divider"></div>
+      <div class="tags">
+        <span class="tag">写实风格</span><span class="tag">树脂手办</span><span class="tag">限量发行</span><span class="tag">中国神话</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner">
+    <div class="section-header"><h2>概念设计</h2><p>CONCEPT ART · 混沌三视图探索</p></div>
+    <div class="gallery">
+      <div class="gallery-item feature" data-src="assets/hundun/混沌概念图.png" data-num="15">
+        <img src="assets/hundun/混沌概念图.png" alt="混沌概念设计" loading="lazy">
+        <div class="overlay"><span>概念图</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/hundun/混沌1视图.png" data-num="16">
+        <img src="assets/hundun/混沌1视图.png" alt="混沌视图 01" loading="lazy">
+        <div class="overlay"><span>VIEW 01</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/hundun/混沌2视图.png" data-num="17">
+        <img src="assets/hundun/混沌2视图.png" alt="混沌视图 02" loading="lazy">
+        <div class="overlay"><span>VIEW 02</span></div>
+      </div>
+      <div class="gallery-item" data-src="assets/hundun/混沌3视图.png" data-num="18">
+        <img src="assets/hundun/混沌3视图.png" alt="混沌视图 03" loading="lazy">
+        <div class="overlay"><span>VIEW 03</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="section-header"><h2>产品规格</h2><p>SPECIFICATIONS</p></div>
+    <div class="specs">
+      <div class="spec-item"><div class="label">高度</div><div class="value">待定</div></div>
+      <div class="spec-item"><div class="label">材质</div><div class="value">PU 树脂</div></div>
+      <div class="spec-item"><div class="label">涂装</div><div class="value">手工上色</div></div>
+      <div class="spec-item"><div class="label">限量</div><div class="value">待定</div></div>
+    </div>
+  </div>
+
+  <div class="section-inner" style="padding-top:0">
+    <div class="about-text">
+      <p>混沌，<strong>《山海经·西山经》</strong>所载上古四凶之一，状如囊，赤如丹火，六足四翼，浑敦无面目。</p>
+      <p>本作以写实风格诠释这一<strong>无形之兽</strong>，探索混沌美学，融合现代数字雕刻技术与传统神话想象。</p>
+    </div>
+  </div>
+</section>
+
+<!-- AI Chat Widget -->
+<button class="chat-btn" id="chatBtn" aria-label="AI 助手">
+  <svg class="chat-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  <svg class="close-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+</button>
+
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <div class="dot"></div>
+    <span>AI 助手 · 山海之凶兽</span>
+    <small>知识问答</small>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="msg ai">
+      你好！我是山海之凶兽的 AI 助手。<br>
+      想了解<strong>穷奇、饕餮、梼杌、混沌</strong>这四凶中的哪一个？或者问我和《山海经》相关的问题。
+    </div>
+  </div>
+  <div class="chat-suggestions" id="chatSuggestions">
+    <button data-q="穷奇是什么样的异兽？">穷奇是什么样的异兽？</button>
+    <button data-q="介绍一下饕餮">介绍一下饕餮</button>
+    <button data-q="梼杌有什么特点？">梼杌有什么特点？</button>
+    <button data-q="混沌长什么样子？">混沌长什么样子？</button>
+    <button data-q="什么是上古四凶？">什么是上古四凶？</button>
+  </div>
+  <div class="chat-input-wrap">
+    <input type="text" id="chatInput" placeholder="输入你的问题…" maxlength="200">
+    <button id="chatSend" aria-label="发送">
+      <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9 22 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ 异兽百科全书 ═══ -->
+<section id="beast-encyclopedia" class="section-inner" style="display:none;">
+  <div class="section-header">
+    <h2>异兽百科全书</h2>
+    <p>ENCYCLOPEDIA · 《山海经》收录异兽 100+</p>
+  </div>
+  <div style="max-width:900px;margin:0 auto 32px;">
+    <input type="text" id="encyclopediaSearch" placeholder="搜索异兽名称…" oninput="filterEncyclopedia()"
+      style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:14px 24px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;transition:border-color 0.3s;"
+      onfocus="this.style.borderColor='rgba(200,75,49,0.5)'" onblur="this.style.borderColor=''">
+  </div>
+  <div id="encyclopediaTabs" style="display:flex;flex-wrap:wrap;gap:8px;max-width:900px;margin:0 auto 32px;justify-content:center;">
+  </div>
+  <div id="encyclopediaList" style="max-width:900px;margin:0 auto;"></div>
+</section>
+
+<footer>
+  &copy; 2026 XIONG · 山海之凶兽 · ALL RIGHTS RESERVED
+</footer>
+
+<div class="lightbox" id="lightbox">
+  <div class="close">&times;</div>
+  <div class="nav-prev" id="nav-prev">&lsaquo;</div>
+  <div class="nav-next" id="nav-next">&rsaquo;</div>
+  <img src="" alt="" id="lightbox-img">
+  <div class="counter" id="lightbox-counter"></div>
+</div>
+
+<script src="shanhaijing-data.js"></script>
+<script>
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+const lightboxCounter = document.getElementById('lightbox-counter');
+const items = Array.from(document.querySelectorAll('[data-src]'));
+const total = items.length;
+
+let currentIndex = 0;
+
+function showImage(index) {
+  if (index < 0) index = total - 1;
+  if (index >= total) index = 0;
+  currentIndex = index;
+  const item = items[currentIndex];
+  lightboxImg.src = item.dataset.src;
+  lightboxCounter.textContent = item.dataset.num + ' / ' + String(total).padStart(2, '0');
+}
+
+items.forEach((item, i) => {
+  item.addEventListener('click', () => {
+    showImage(i);
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
+});
+
+document.getElementById('nav-prev').addEventListener('click', (e) => {
+  e.stopPropagation(); showImage(currentIndex - 1);
+});
+document.getElementById('nav-next').addEventListener('click', (e) => {
+  e.stopPropagation(); showImage(currentIndex + 1);
+});
+
+function closeLightbox() {
+  lightbox.classList.remove('active');
+  document.body.style.overflow = '';
+}
+document.querySelector('.lightbox .close').addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft' && !document.getElementById('chatInput').matches(':focus') && !document.getElementById('heroChatInput').matches(':focus')) showImage(currentIndex - 1);
+  if (e.key === 'ArrowRight' && !document.getElementById('chatInput').matches(':focus') && !document.getElementById('heroChatInput').matches(':focus')) showImage(currentIndex + 1);
+});
+
+/* ── AI Chat ── */
+const chatBtn = document.getElementById('chatBtn');
+const chatPanel = document.getElementById('chatPanel');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+const chatSuggestions = document.getElementById('chatSuggestions');
+const heroChatInput = document.getElementById('heroChatInput');
+const heroChatSend = document.getElementById('heroChatSend');
+const heroSuggestions = document.querySelector('.search-hero-hints');
+const chatIcon = chatBtn.querySelector('.chat-icon');
+const closeIcon = chatBtn.querySelector('.close-icon');
+let chatOpen = false;
+
+function openChat() {
+  chatOpen = true;
+  chatPanel.classList.add('open');
+  chatIcon.style.display = 'none';
+  closeIcon.style.display = '';
+}
+
+chatBtn.addEventListener('click', () => {
+  chatOpen = !chatOpen;
+  chatPanel.classList.toggle('open', chatOpen);
+  chatIcon.style.display = chatOpen ? 'none' : '';
+  closeIcon.style.display = chatOpen ? '' : 'none';
+  if (chatOpen) chatInput.focus();
+});
+
+const knowledge = {
+  hello: '你好！我是山海之凶兽的 AI 助手。你可以搜索《山海经》中的任何异兽，比如输入异兽名称查询详细资料。已有概念图和三视图的异兽有：穷奇、饕餮、梼杌、混沌。',
+  四凶: '上古四凶指穷奇、饕餮、梼杌、混沌。本系列以写实风格重构这四个经典异兽，探索中国神话IP在设计师玩具领域的可能性。穷奇（虎身双翼）、饕餮（贪食巨兽）、梼杌（顽固凶兽）、混沌（无面无形）均已有概念设计页面。',
+  山海经: '《山海经》是中国先秦古籍，记载了大量神话地理和奇珍异兽，全书共十八卷，分山经五卷、海经十三卷。本数据库已收录100+异兽，涵盖南山经、西山经、北山经、东山经、中山经、海外经、海内经、大荒经。本系列的设计灵感均来源于此。',
+  手办: '本系列已有作品均为 PU 树脂材质、手工上色的设计师艺术玩具，旨在将中国神话IP与现代数字雕刻技术相结合。穷奇已有三维渲染预览。',
+};
+
+function searchBeasts(query) {
+  const q = query.trim();
+  if (!q) return [];
+  const results = [];
+  for (const b of SHANHAIJING_BEASTS) {
+    if (b.name === q || b.name.includes(q) || q.includes(b.name)) {
+      results.push(b);
+    }
+  }
+  // boost exact matches
+  results.sort((a, b) => {
+    if (a.name === q) return -1;
+    if (b.name === q) return 1;
+    return a.name.length - b.name.length;
+  });
+  return results.slice(0, 5);
+}
+
+function formatBeastResult(b) {
+  let txt = '<strong>' + b.name + '</strong> — ' + b.chapter + '\n' + b.desc;
+  if (b.full && b.full !== b.desc) txt += '\n\n📖 <em>' + b.full + '</em>';
+  const links = [];
+  if (b.hasArt) links.push('<a href="' + (b.page || '#') + '" target="_blank" style="color:#c84b31;text-decoration:underline;">查看概念设计</a>');
+  if (b.has3D) links.push('<a href="' + (b.page || '#') + '#threed" target="_blank" style="color:#c84b31;text-decoration:underline;">查看三维呈现</a>');
+  if (!b.hasArt && !b.has3D) links.push('<a href="#beast-encyclopedia" onclick="document.getElementById(\'encyclopediaSearch\').value=\'' + b.name + '\';filterEncyclopedia();" style="color:var(--text-dim);text-decoration:underline;">跳转到资料位置</a>');
+  if (links.length) txt += '\n' + links.join(' · ');
+  return txt;
+}
+
+function getResponse(q) {
+  const l = q.toLowerCase();
+  const results = searchBeasts(q);
+  if (results.length > 0) {
+    return results.map(formatBeastResult).join('\n\n---\n\n');
+  }
+  if (/穷奇/.test(q) || /qiongqi/i.test(l)) return formatBeastResult(SHANHAIJING_BEASTS.find(b => b.name==='穷奇'));
+  if (/饕餮/.test(q) || /taotie/i.test(l)) return formatBeastResult(SHANHAIJING_BEASTS.find(b => b.name==='饕餮'));
+  if (/梼杌/.test(q) || /taowu/i.test(l)) return formatBeastResult(SHANHAIJING_BEASTS.find(b => b.name==='梼杌'));
+  if (/混沌/.test(q) || /hundun/i.test(l)) return formatBeastResult(SHANHAIJING_BEASTS.find(b => b.name==='混沌'));
+  if (/四凶|四大/.test(q)) return knowledge.四凶;
+  if (/山海经|神话/.test(q) && q.length > 3) return knowledge.山海经;
+  if (/手办|玩具|材质|规格|限量|高度/.test(q)) return knowledge.手办;
+  if (/你好|嗨|hi|hello/i.test(l) && q.length < 6) return knowledge.hello;
+  return '在《山海经》数据库中未找到匹配的异兽。\n\n你可以尝试：\n• 输入异兽名称（如"九尾狐""毕方""烛龙""应龙"等）\n• "穷奇" "饕餮" "梼杌" "混沌" — 已有概念设计\n• "四凶" — 了解四凶概况\n• "山海经" — 了解典籍背景\n\n你也可以在页面底部的<strong>异兽百科全书</strong>中浏览全部收录异兽。';
+}
+
+function addMsg(text, type) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + type;
+  div.innerHTML = text.replace(/\n/g, '<br>');
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+function simulateTyping(cb) {
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  setTimeout(() => { div.remove(); cb(); }, 600 + Math.random() * 400);
+}
+
+function sendMessage(text) {
+  if (!text.trim()) return;
+  addMsg(text, 'user');
+  chatInput.value = '';
+  simulateTyping(() => addMsg(getResponse(text), 'ai'));
+}
+
+chatSend.addEventListener('click', () => sendMessage(chatInput.value));
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendMessage(chatInput.value);
+});
+
+/* ── Chapter Navigation & Content ── */
+const chapterMenuBtn = document.getElementById('chapterMenuBtn');
+const chapterDropdown = document.getElementById('chapterDropdown');
+const contentArea = document.getElementById('contentArea');
+const chapterContent = document.getElementById('chapterContent');
+const heroChatInputEl = document.getElementById('heroChatInput');
+
+// Build chapter dropdown
+chapterDropdown.innerHTML = BEAST_CHAPTERS.map(ch => {
+  const hasArtBeasts = ch.beasts.filter(b => b.hasArt);
+  return '<button data-ch="' + ch.name + '"' + (hasArtBeasts.length ? ' class="has-art"' : '') + '>' +
+    ch.name + '<span class="count">(' + ch.beasts.length + ')</span></button>';
+}).join('');
+
+// Dropdown toggle
+chapterMenuBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  chapterMenuBtn.parentElement.classList.toggle('open');
+});
+document.addEventListener('click', (e) => {
+  if (!chapterMenuBtn.parentElement.contains(e.target)) {
+    chapterMenuBtn.parentElement.classList.remove('open');
+  }
+});
+
+// Render chapter beasts
+function renderChapter(chapterName, highlightName) {
+  const ch = BEAST_CHAPTERS.find(c => c.name === chapterName);
+  if (!ch) return;
+  chapterMenuBtn.parentElement.classList.remove('open');
+  document.querySelector('.search-hero').style.display = 'none';
+  contentArea.style.display = 'block';
+  let html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:40px;max-width:900px;margin-left:auto;margin-right:auto;">';
+  html += '<button onclick="goBackToSearch()" style="background:none;border:1px solid var(--border);border-radius:20px;padding:8px 16px;color:var(--text-dim);cursor:pointer;font-family:inherit;font-size:0.75rem;transition:all 0.2s;" onmouseover="this.style.borderColor=\'#fff\';this.style.color=\'#fff\'" onmouseout="this.style.borderColor=\'\';this.style.color=\'\'">← 返回</button>';
+  html += '<div><h2 style="font-family:\'Cinzel\',serif;font-size:1.8rem;letter-spacing:6px;color:#fff;">' + ch.name + '</h2><p style="font-size:0.8rem;color:var(--text-dim);">共收录 ' + ch.beasts.length + ' 种异兽</p></div>';
+  html += '</div>';
+  html += '<div style="max-width:900px;margin:0 auto;">';
+  html += ch.beasts.map((b, i) => {
+    let links = '';
+    if (b.hasArt) links += ' <a href="' + (b.page || '#') + '" target="_blank" style="color:' + (b.name === highlightName ? '#fff' : '#c84b31') + ';text-decoration:none;font-size:0.7rem;font-weight:500;">📐 概念设计</a>';
+    if (b.has3D) links += ' <a href="' + (b.page || '#') + '#threed" target="_blank" style="color:#c84b31;text-decoration:none;font-size:0.7rem;font-weight:500;">🎬 三维呈现</a>';
+    const highlight = highlightName && b.name === highlightName;
+    const detailId = 'beast-detail-' + i;
+    let html2 = '<div style="padding:14px 0;border-bottom:1px solid var(--border);' + (highlight ? 'background:rgba(200,75,49,0.08);margin:0 -12px;padding-left:12px;padding-right:12px;border-radius:4px;' : '') + '">';
+    html2 += '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">';
+    html2 += '<strong style="color:#fff;font-size:0.9rem;">' + b.name + '</strong>';
+    html2 += '<span style="color:var(--text-dim);font-size:0.65rem;">' + b.chapter + '</span>';
+    html2 += links;
+    html2 += '</div>';
+    html2 += '<p style="color:var(--text-dim);font-size:0.78rem;margin-top:4px;line-height:1.6;">' + b.desc + '</p>';
+    if (b.full && b.full !== b.desc) {
+      html2 += '<details style="margin-top:8px;cursor:pointer;"><summary style="color:var(--accent);font-size:0.7rem;letter-spacing:1px;">📖 展开原文与考释</summary>';
+      html2 += '<p style="color:var(--text-dim);font-size:0.76rem;line-height:1.8;margin-top:8px;padding:12px;background:rgba(255,255,255,0.02);border-left:2px solid rgba(200,75,49,0.3);border-radius:0 4px 4px 0;">' + b.full + '</p></details>';
+    }
+    html2 += '</div>';
+    return html2;
+  }).join('');
+  html += '</div>';
+  chapterContent.innerHTML = html;
+  contentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.location.hash = 'chapter-' + encodeURIComponent(chapterName);
+}
+
+function goBackToSearch() {
+  document.querySelector('.search-hero').style.display = '';
+  contentArea.style.display = 'none';
+  window.location.hash = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Handle hash on page load
+if (window.location.hash.startsWith('#chapter-')) {
+  const chName = decodeURIComponent(window.location.hash.replace('#chapter-', ''));
+  renderChapter(chName);
+}
+
+window.addEventListener('hashchange', () => {
+  if (window.location.hash.startsWith('#chapter-')) {
+    const chName = decodeURIComponent(window.location.hash.replace('#chapter-', ''));
+    renderChapter(chName);
+  } else if (!window.location.hash) {
+    goBackToSearch();
+  }
+});
+
+// Chapter dropdown clicks
+chapterDropdown.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  renderChapter(btn.dataset.ch);
+});
+
+// Search from hero bar → find beast and show its chapter
+function searchAndShow(query) {
+  const results = searchBeasts(query);
+  if (results.length > 0) {
+    const beast = results[0];
+    const ch = BEAST_CHAPTERS.find(c => c.beasts.some(b => b.name === beast.name));
+    if (ch) {
+      renderChapter(ch.name, beast.name);
+      return true;
+    }
+  }
+  return false;
+}
+
+// Update hero search to also show content area
+const origSendMessage = sendMessage;
+sendMessage = function(text) {
+  if (searchAndShow(text)) {
+    // also show chat response
+    origSendMessage(text);
+  } else {
+    origSendMessage(text);
+  }
+};
+
+// Update hero chat send button
+heroChatSend.addEventListener('click', () => {
+  const q = heroChatInputEl.value.trim();
+  if (!q) return;
+  if (!chatOpen) openChat();
+  searchAndShow(q);
+  origSendMessage(q);
+  heroChatInputEl.value = '';
+});
+
+heroChatInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const q = heroChatInputEl.value.trim();
+    if (!q) return;
+    if (!chatOpen) openChat();
+    searchAndShow(q);
+    origSendMessage(q);
+    heroChatInputEl.value = '';
+  }
+});
+
+// Update hero suggestions to also show content
+heroSuggestions.addEventListener('click', (e) => {
+  if (e.target.tagName === 'BUTTON') {
+    const q = e.target.dataset.q;
+    if (!chatOpen) openChat();
+    searchAndShow(q);
+    origSendMessage(q);
+  }
+});
+
+// Update chat suggestions too
+chatSuggestions.addEventListener('click', (e) => {
+  if (e.target.tagName === 'BUTTON') {
+    const q = e.target.dataset.q;
+    searchAndShow(q);
+    origSendMessage(q);
+  }
+});
+
+// Remove old encyclopedia init
+// (encyclopedia section hidden by default, shown only via chapter nav)
+</script>
+
+</body>
+</html>

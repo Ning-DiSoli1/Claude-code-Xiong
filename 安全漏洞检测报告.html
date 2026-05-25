@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>安全漏洞检测报告 - qzhiyuan.com</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; line-height: 1.7; }
+.container { max-width: 1000px; margin: 0 auto; }
+h1 { text-align: center; color: #e94560; font-size: 28px; margin: 20px 0 10px; border-bottom: 2px solid #e94560; padding-bottom: 15px; }
+h2 { color: #f5c518; font-size: 22px; margin: 30px 0 15px; border-left: 4px solid #f5c518; padding-left: 12px; }
+h3 { color: #ff6b6b; font-size: 17px; margin: 20px 0 10px; }
+h3.safe { color: #51cf66; }
+.severity { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 13px; font-weight: bold; margin-right: 8px; }
+.severity-critical { background: #e94560; color: #fff; }
+.severity-high { background: #ff6b6b; color: #fff; }
+.severity-medium { background: #f5c518; color: #1a1a2e; }
+.severity-low { background: #51cf66; color: #1a1a2e; }
+.card { background: #16213e; border-radius: 8px; padding: 20px; margin: 15px 0; border: 1px solid #2a3a5e; }
+.card pre { background: #0f172a; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 13px; margin: 10px 0; border: 1px solid #333; }
+.card code { background: #0f172a; padding: 2px 6px; border-radius: 3px; font-size: 13px; color: #f5c518; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+th, td { padding: 10px 14px; text-align: left; border: 1px solid #2a3a5e; }
+th { background: #0f172a; color: #f5c518; }
+td { font-size: 14px; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+.summary-item { background: #16213e; border-radius: 8px; padding: 15px; text-align: center; border: 1px solid #2a3a5e; }
+.summary-item .count { font-size: 36px; font-weight: bold; }
+.summary-item .label { font-size: 14px; color: #999; margin-top: 5px; }
+.count-critical { color: #e94560; }
+.count-high { color: #ff6b6b; }
+.count-medium { color: #f5c518; }
+.count-low { color: #51cf66; }
+.footer { text-align: center; margin-top: 30px; padding: 20px; color: #666; font-size: 13px; border-top: 1px solid #333; }
+ul { margin-left: 20px; }
+ul li { margin: 5px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>安全漏洞检测报告</h1>
+<p style="text-align:center;color:#999;margin-bottom:20px">目标: www.qzhiyuan.com / erp.gaokaoquan.cn | 日期: 2026-05-24</p>
+
+<div class="summary-grid">
+    <div class="summary-item">
+        <div class="count count-critical">4</div>
+        <div class="label">严重漏洞</div>
+    </div>
+    <div class="summary-item">
+        <div class="count count-high">7</div>
+        <div class="label">高危漏洞</div>
+    </div>
+    <div class="summary-item">
+        <div class="count count-medium">6</div>
+        <div class="label">中危漏洞</div>
+    </div>
+    <div class="summary-item">
+        <div class="count count-low">5</div>
+        <div class="label">低危漏洞</div>
+    </div>
+</div>
+
+<!-- ============ 主站 ============ -->
+<h2>一、主站 www.qzhiyuan.com（高考志愿填报系统）</h2>
+
+<div class="card">
+<h3><span class="severity severity-critical">严重</span> 1. CORS 跨域配置不当</h3>
+<p>API 接口存在严重的 CORS 配置缺陷：当请求携带 <code>Origin</code> 头时，<code>Access-Control-Allow-Origin</code> 会反射回请求的 Origin，同时设置了 <code>Access-Control-Allow-Credentials: true</code>。</p>
+<p style="color:#ff6b6b;margin-top:8px;">攻击者可在任意恶意网站构造请求，利用已登录用户的 Cookie 凭证发起跨域请求，窃取用户敏感数据。</p>
+<pre>$ curl -H "Origin: https://evil.com" https://www.qzhiyuan.com/api/cust/regAndLogin
+-> Access-Control-Allow-Origin: https://evil.com
+-> Access-Control-Allow-Credentials: true</pre>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-critical">严重</span> 2. MD5 签名盐值硬编码在前端 JS 中</h3>
+<p>在 <code>index.87b905cf.js</code> 中发现微信登录的 MD5 签名盐值被硬编码，攻击者可伪造 <code>paramSign</code> 绕过签名校验。</p>
+<pre>签名盐值: 25raHVwZ2xnemhsbW9jdHBkbGRkZ2dka2pkdG92aHB3ZGVoYHBoAAA
+签名逻辑: Md5.hashStr(openid + phone + smsCode + salt)</pre>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-high">高危</span> 3. 缺少关键安全响应头</h3>
+<table>
+<tr><th>缺失的安全头</th><th>风险</th></tr>
+<tr><td>X-Frame-Options</td><td>页面可被嵌入 iframe，存在点击劫持风险</td></tr>
+<tr><td>X-Content-Type-Options</td><td>存在 MIME 类型嗅探风险</td></tr>
+<tr><td>Content-Security-Policy</td><td>无 CSP 防护，可被执行 XSS 攻击</td></tr>
+<tr><td>Strict-Transport-Security</td><td>未强制 HSTS，存在 SSL 降级风险</td></tr>
+<tr><td>Referrer-Policy</td><td>请求可泄露 Referer 信息</td></tr>
+<tr><td>Permissions-Policy</td><td>未限制浏览器特性权限</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-high">高危</span> 4. nginx 版本信息泄露</h3>
+<p>错误页面暴露 nginx/1.24.0 版本号：</p>
+<pre>Server: nginx
+&lt;hr&gt;&lt;center&gt;nginx/1.24.0&lt;/center&gt;</pre>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-medium">中危</span> 5. 前端 SPA 路由导致敏感路径探测</h3>
+<p>所有未匹配路由均返回 SPA 主页面（2283 字节），包括 <code>/actuator/*</code> 等路径，可能暴露内部架构信息。</p>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-medium">中危</span> 6. 敏感 API 端点在 JS 中明文暴露</h3>
+<p>前端 JS 包含 30+ 个 API 端点：</p>
+<ul>
+<li>/cust/regAndLogin — 注册/登录</li>
+<li>/cust/autoLogin — 自动登录</li>
+<li>/cust/customer/updatePwd — 修改密码</li>
+<li>/cust/customer/queryAccountByPhone — 账号查询（可枚举）</li>
+<li>/cust/customer/getCustomerInfo — 用户详情</li>
+</ul>
+</div>
+
+<!-- ============ 后台 ============ -->
+<h2>二、后台 erp.gaokaoquan.cn + saas_api.gaokaoq.com</h2>
+
+<div class="card">
+<h3><span class="severity severity-critical">严重</span> 1. CORS 配置致命缺陷</h3>
+<p><code>saas_api.gaokaoq.com</code> 的 CORS 配置违反 W3C 规范：</p>
+<pre>Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true   ← 规范禁止此组合!
+Access-Control-Allow-Methods: *
+Access-Control-Allow-Headers: (几乎所有请求头)</pre>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-critical">严重</span> 2. 登录接口无速率限制</h3>
+<p><code>POST /admin/login</code> 无任何登录频率限制。验证码尺寸仅 120×36 像素，纯数字，可结合 OCR 进行暴力破解。</p>
+<pre>登录参数: admin_name + password + captcha + captcha_key
+连续5次请求均正常响应，无锁定/延迟机制</pre>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-high">高危</span> 3. 缺少所有安全响应头</h3>
+<p>ERP 系统完全没有任何安全 HTTP 响应头。</p>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-high">高危</span> 4. HTTP 明文传输，未强制 HTTPS</h3>
+<p><code>erp.gaokaoquan.cn</code> 在 HTTP(80) 和 HTTPS(443) 均可访问，登录凭据可能在 HTTP 连接上被中间人窃取。</p>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-high">高危</span> 5. 框架信息泄露</h3>
+<ul>
+<li>Laravel 框架可通过 Cookie 格式 (XSRF-TOKEN) 识别</li>
+<li>响应头 <code>Set-Cookie: wxgk_session</code> 暴露 Session 机制</li>
+<li>默认 Laravel 欢迎页面仍可访问</li>
+</ul>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-medium">中危</span> 6. 100+ API 路由在前端 JS 完全暴露</h3>
+<table>
+<tr><th>模块</th><th>暴露的端点</th></tr>
+<tr><td>财务管理</td><td>/admin/finance/recharge, /withdraw, /withdrawCancel, /getSMSCode, /checkSMSCode</td></tr>
+<tr><td>支付接口</td><td>/admin/pay/alipay, /weixin, /aliOrderQuery, /wxOrderQuery</td></tr>
+<tr><td>用户管理</td><td>/admin/user/index, /edit, /export, /admin/admin/delete</td></tr>
+<tr><td>站点配置</td><td>/admin/site/config, /configEdit, /domainIndex, /domainEdit, /payIndex</td></tr>
+<tr><td>文件上传</td><td>/admin/upload</td></tr>
+<tr><td>微信管理</td><td>/admin/wechatManager/auth, /sendcode, /unbound</td></tr>
+<tr><td>其他</td><td>/admin/sms/*, /admin/refresh, /admin/me, /admin/enums 等</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-medium">中危</span> 7. 验证码接口设计缺陷</h3>
+<p><code>GET /captcha/api</code> 返回 JSON 格式，含 base64 图片和 key，便于程序化提取：</p>
+<pre>{"sensitive":false, "key":"...", "img":"data:image/png;base64,..."}</pre>
+<p>验证码为纯数字、120x36像素，无扭曲干扰，可被 OCR 识别。</p>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-low">低危</span> 8. CNZZ 统计代码泄露</h3>
+<p>页面嵌入 CNZZ 统计代码 (站点ID: 1280095131)，可查询该站点访问统计数据。</p>
+</div>
+
+<div class="card">
+<h3><span class="severity severity-low">低危</span> 9. HTTP 方法泄露</h3>
+<pre>OPTIONS /admin/login -> Allow: GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH</pre>
+</div>
+
+<!-- ============ 修复建议 ============ -->
+<h2>三、修复建议</h2>
+
+<table>
+<tr><th>优先级</th><th>修复项</th><th>说明</th></tr>
+<tr style="background:#3d1520">
+<td><span class="severity severity-critical">P0</span></td>
+<td>修复 CORS 配置</td>
+<td>设置可信 Origin 白名单，不要反射 Origin</td>
+</tr>
+<tr style="background:#3d1520">
+<td><span class="severity severity-critical">P0</span></td>
+<td>移除前端 JS 中的签名盐值</td>
+<td>签名逻辑迁移到服务端执行</td>
+</tr>
+<tr style="background:#2a1a1a">
+<td><span class="severity severity-high">P1</span></td>
+<td>添加安全响应头</td>
+<td>CSP, X-Frame-Options, HSTS, X-Content-Type-Options</td>
+</tr>
+<tr style="background:#2a1a1a">
+<td><span class="severity severity-high">P1</span></td>
+<td>登录接口添加速率限制</td>
+<td>IP + 账号维度限流，连续失败锁定</td>
+</tr>
+<tr style="background:#2a1a1a">
+<td><span class="severity severity-high">P1</span></td>
+<td>强制 HTTPS 跳转</td>
+<td>所有 HTTP 请求 301 重定向到 HTTPS</td>
+</tr>
+<tr style="background:#2a1a1a">
+<td><span class="severity severity-high">P1</span></td>
+<td>隐藏服务器信息</td>
+<td>nginx: server_tokens off; 移除默认页面</td>
+</tr>
+<tr>
+<td><span class="severity severity-medium">P2</span></td>
+<td>Cookie 安全加固</td>
+<td>设置 Secure, HttpOnly, SameSite=Lax</td>
+</tr>
+<tr>
+<td><span class="severity severity-medium">P2</span></td>
+<td>加强验证码安全性</td>
+<td>增加干扰元素、扭曲、字符混合</td>
+</tr>
+<tr>
+<td><span class="severity severity-low">P3</span></td>
+<td>部署 WAF + 定期安全测试</td>
+<td>阿里云 WAF、年度渗透测试</td>
+</tr>
+</table>
+
+<!-- ============ 检测范围 ============ -->
+<h2>四、检测范围说明</h2>
+
+<div class="card">
+<table>
+<tr><th>已检测项目</th><th>未检测项目（需授权）</th></tr>
+<tr>
+<td>HTTP 响应头安全分析<br>前端 JavaScript 代码审计<br>API 端点枚举与访问控制测试<br>CORS 配置检查<br>常见漏洞路径探测<br>服务器信息收集<br>速率限制测试</td>
+<td>SQL 注入深度测试<br>XSS 跨站脚本攻击测试<br>文件上传漏洞利用<br>权限提升测试<br>业务逻辑漏洞测试<br>CSRF 跨站请求伪造<br>SSRF 服务端请求伪造</td>
+</tr>
+</table>
+</div>
+
+<div class="footer">
+<p>报告结束 | 本次检测基于被动信息收集和轻量级安全测试</p>
+<p>建议尽快安排专业渗透测试进行全面评估</p>
+</div>
+
+</div>
+</body>
+</html>

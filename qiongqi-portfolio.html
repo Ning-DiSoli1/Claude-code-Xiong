@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>穷奇 QIONGQI — 山海之凶兽</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Cinzel:wght@400;600;700&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0b0b0e;
+    --surface: #141418;
+    --border: rgba(255,255,255,0.06);
+    --text: #c4c4c8;
+    --text-dim: #6b6b72;
+    --accent: #c84b31;
+    --accent-glow: rgba(200, 75, 49, 0.3);
+    --gold: #b8936e;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Navigation ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(11,11,14,0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+  }
+  nav .logo {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #fff;
+  }
+  nav .logo span { color: var(--accent); }
+  nav ul { display: flex; list-style: none; gap: 32px; }
+  nav ul li a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+  nav ul li a:hover { color: #fff; }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 40px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(200,75,49,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-content { position: relative; z-index: 1; max-width: 800px; }
+  .hero .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 6px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 5rem;
+    font-weight: 700;
+    letter-spacing: 12px;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .hero h1 .cn {
+    display: block;
+    font-family: 'Noto Sans SC', serif;
+    font-size: 2rem;
+    font-weight: 300;
+    letter-spacing: 16px;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .hero .subtitle {
+    font-size: 1rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 48px;
+  }
+  .hero .divider {
+    width: 60px; height: 1px;
+    background: var(--accent);
+    margin: 0 auto 48px;
+  }
+  .hero .tags {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    padding: 8px 20px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 2px;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* ── Sections ── */
+  section { padding: 100px 40px; }
+  .section-header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+  .section-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    letter-spacing: 6px;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .section-header p {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── Gallery Grid ── */
+  .gallery {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .gallery-item {
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--surface);
+    aspect-ratio: 3/4;
+    transition: transform 0.4s ease;
+  }
+  .gallery-item:hover { transform: scale(1.02); }
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.4s;
+  }
+  .gallery-item .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .gallery-item:hover .overlay { opacity: 1; }
+  .gallery-item .overlay span {
+    color: #fff;
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    border-bottom: 1px solid rgba(255,255,255,0.4);
+    padding-bottom: 4px;
+  }
+
+  /* Full-width items for 3D renders */
+  .gallery-item.feature {
+    grid-column: span 2;
+    aspect-ratio: 16/10;
+  }
+  .gallery-item.feature + .gallery-item { aspect-ratio: 3/4; }
+
+  /* ── 3D section ── */
+  .render-grid {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .render-item {
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--surface);
+    transition: transform 0.4s ease;
+  }
+  .render-item:hover { transform: scale(1.02); }
+  .render-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── Specs ── */
+  .specs {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .spec-item {
+    background: var(--surface);
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .spec-item .label {
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .spec-item .value {
+    font-size: 1rem;
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* ── About text ── */
+  .about-text {
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    line-height: 2;
+  }
+  .about-text strong { color: #fff; font-weight: 400; }
+
+  /* ── Lightbox ── */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .lightbox.active { opacity: 1; pointer-events: auto; }
+  .lightbox img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 2px;
+  }
+  .lightbox .close {
+    position: absolute;
+    top: 24px; right: 32px;
+    color: #fff;
+    font-size: 2rem;
+    cursor: pointer;
+    width: 44px; height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transition: background 0.3s;
+  }
+  .lightbox .close:hover { background: rgba(255,255,255,0.1); }
+  .lightbox .counter {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 60px 40px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    nav { padding: 0 20px; }
+    nav ul { gap: 16px; }
+    .hero h1 { font-size: 3rem; letter-spacing: 6px; }
+    .hero h1 .cn { font-size: 1.4rem; letter-spacing: 8px; }
+    .gallery { grid-template-columns: 1fr; }
+    .gallery-item.feature { grid-column: span 1; aspect-ratio: 3/4; }
+    .render-grid { grid-template-columns: 1fr; }
+    .specs { grid-template-columns: repeat(2, 1fr); }
+    section { padding: 60px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">X<span>I</span>ONG</div>
+  <ul>
+    <li><a href="#concept">概念</a></li>
+    <li><a href="#threed">三维</a></li>
+    <li><a href="#specs">规格</a></li>
+    <li><a href="#about">关于</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="eyebrow">山海之凶兽 Collection · 001</div>
+    <h1>
+      <span class="cn">穷 奇</span>
+      QIONGQI
+    </h1>
+    <p class="subtitle">上古四凶 · 虎身双翼 · 设计师艺术玩具概念</p>
+    <div class="divider"></div>
+    <div class="tags">
+      <span class="tag">写实风格</span>
+      <span class="tag">树脂手办</span>
+      <span class="tag">限量发行</span>
+      <span class="tag">中国神话</span>
+    </div>
+  </div>
+</section>
+
+<!-- Concept Art -->
+<section id="concept">
+  <div class="section-header">
+    <h2>概念设计</h2>
+    <p>CONCEPT ART · 穷奇三视图探索</p>
+  </div>
+  <div class="gallery">
+    <div class="gallery-item feature" data-src="assets/qiongqi/mmexport1779679541914.png" data-num="01">
+      <img src="assets/qiongqi/mmexport1779679541914.png" alt="穷奇概念设计" loading="lazy">
+      <div class="overlay"><span>概念图</span></div>
+    </div>
+    <div class="gallery-item" data-src="assets/qiongqi/穷奇1视图.png" data-num="02">
+      <img src="assets/qiongqi/穷奇1视图.png" alt="穷奇视图 01" loading="lazy">
+      <div class="overlay"><span>VIEW 01</span></div>
+    </div>
+    <div class="gallery-item" data-src="assets/qiongqi/穷奇2视图.png" data-num="03">
+      <img src="assets/qiongqi/穷奇2视图.png" alt="穷奇视图 02" loading="lazy">
+      <div class="overlay"><span>VIEW 02</span></div>
+    </div>
+    <div class="gallery-item" data-src="assets/qiongqi/穷奇3视图.png" data-num="04">
+      <img src="assets/qiongqi/穷奇3视图.png" alt="穷奇视图 03" loading="lazy">
+      <div class="overlay"><span>VIEW 03</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3D Renders -->
+<section id="threed">
+  <div class="section-header">
+    <h2>三维呈现</h2>
+    <p>3D RENDER · 数字雕刻预览</p>
+  </div>
+  <div class="render-grid">
+    <div class="render-item" data-src="assets/qiongqi/mmexport1779679548453.png" data-num="05">
+      <img src="assets/qiongqi/mmexport1779679548453.png" alt="穷奇三维渲染 01" loading="lazy">
+    </div>
+    <div class="render-item" data-src="assets/qiongqi/mmexport1779679550432.png" data-num="06">
+      <img src="assets/qiongqi/mmexport1779679550432.png" alt="穷奇三维渲染 02" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- Specs -->
+<section id="specs">
+  <div class="section-header">
+    <h2>产品规格</h2>
+    <p>SPECIFICATIONS · 计划参数</p>
+  </div>
+  <div class="specs">
+    <div class="spec-item">
+      <div class="label">高度</div>
+      <div class="value">~32 cm</div>
+    </div>
+    <div class="spec-item">
+      <div class="label">材质</div>
+      <div class="value">PU 树脂</div>
+    </div>
+    <div class="spec-item">
+      <div class="label">涂装</div>
+      <div class="value">手工上色</div>
+    </div>
+    <div class="spec-item">
+      <div class="label">限量</div>
+      <div class="value">待定</div>
+    </div>
+  </div>
+</section>
+
+<!-- About -->
+<section id="about">
+  <div class="section-header">
+    <h2>创作笔记</h2>
+    <p>ARTIST NOTES</p>
+  </div>
+  <div class="about-text">
+    <p>
+      穷奇，<strong>《山海经·海内北经》</strong>所载上古四凶之一，
+      状如虎而有翼，食人从首之始。
+    </p>
+    <p>
+      本作以写实风格重构经典异兽形象，保留<strong>虎身形体</strong>与<strong>双翼特征</strong>，
+      融合现代数字雕刻技术与传统雕塑审美，
+      探索中国神话 IP 在设计师玩具领域的可能性。
+    </p>
+    <p>
+      概念阶段作品，正在推进实体化。
+    </p>
+  </div>
+</section>
+
+<footer>
+  © 2026 山海之凶兽 · ALL RIGHTS RESERVED
+</footer>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <div class="close">&times;</div>
+  <img src="" alt="" id="lightbox-img">
+  <div class="counter" id="lightbox-counter"></div>
+</div>
+
+<script>
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+const lightboxCounter = document.getElementById('lightbox-counter');
+const items = document.querySelectorAll('[data-src]');
+let currentSrc = '';
+
+items.forEach(item => {
+  item.addEventListener('click', () => {
+    currentSrc = item.dataset.src;
+    lightboxImg.src = currentSrc;
+    lightboxCounter.textContent = item.dataset.num + ' / 06';
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  });
+});
+
+lightbox.addEventListener('click', (e) => {
+  if (e.target === lightbox || e.target.classList.contains('close')) {
+    lightbox.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    lightbox.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科技感 PPT 模板</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050b14;
+    --surface: #0a1628;
+    --surface-light: #111d32;
+    --border: rgba(0, 212, 255, 0.2);
+    --border-bright: rgba(0, 212, 255, 0.45);
+    --primary: #00d4ff;
+    --primary-glow: rgba(0, 212, 255, 0.25);
+    --accent: #7c5cfc;
+    --accent-glow: rgba(124, 92, 252, 0.25);
+    --green: #00e676;
+    --orange: #ff9100;
+    --red: #ff3d5a;
+    --text: #e8edf5;
+    --text-dim: #7a8ba8;
+    --radius: 12px;
+    --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', 'JetBrains Mono', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ======== 背景层 ======== */
+  .bg-layer {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  }
+  .bg-grid {
+    position: absolute; inset: 0;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.4) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  .bg-glow {
+    position: absolute;
+    width: 50vw; height: 50vw; border-radius: 50%; filter: blur(160px); opacity: 0.08;
+  }
+  .bg-glow.g1 { top: -15vw; left: -10vw; background: var(--primary); animation: drift1 12s ease-in-out infinite; }
+  .bg-glow.g2 { bottom: -15vw; right: -10vw; background: var(--accent); animation: drift2 15s ease-in-out infinite; }
+  .bg-glow.g3 { top: 30vh; left: 40vw; background: var(--primary); width: 30vw; height: 30vw; opacity: 0.04; animation: drift3 18s ease-in-out infinite; }
+
+  @keyframes drift1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(5vw,3vw); } }
+  @keyframes drift2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-4vw,-3vw); } }
+  @keyframes drift3 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-3vw,2vw); } }
+
+  /* 粒子 */
+  .particles { position: absolute; inset: 0; }
+  .particle {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: floatUp linear infinite;
+    opacity: 0;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(0); opacity: 0; }
+    10% { opacity: 0.8; }
+    90% { opacity: 0.2; }
+    100% { transform: translateY(-100vh) scale(1.5); opacity: 0; }
+  }
+
+  /* ======== 主容器 ======== */
+  .presentation {
+    position: relative; z-index: 1;
+    width: 100%; height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  /* 进度条 */
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 2px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    z-index: 100; transition: width 0.6s ease;
+    box-shadow: 0 0 10px var(--primary-glow);
+  }
+
+  /* 幻灯片区域 */
+  .slides-container {
+    flex: 1; position: relative; overflow: hidden;
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    opacity: 0; transform: translateX(40px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+  }
+  .slide.active {
+    opacity: 1; transform: translateX(0);
+    pointer-events: auto;
+  }
+  .slide.exit-left {
+    opacity: 0; transform: translateX(-40px);
+  }
+
+  /* 幻灯片装饰线 */
+  .slide::before {
+    content: '';
+    position: absolute; top: 40px; left: 80px;
+    width: 60px; height: 2px;
+    background: var(--primary);
+    box-shadow: 0 0 12px var(--primary-glow);
+  }
+  .slide::after {
+    content: '';
+    position: absolute; bottom: 40px; right: 80px;
+    width: 60px; height: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  /* ======== 幻灯片类型 ======== */
+
+  /* --- 封面 --- */
+  .slide-cover {
+    align-items: center; text-align: center;
+  }
+  .slide-cover .cover-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; letter-spacing: 3px; color: var(--primary);
+    border: 1px solid var(--border);
+    padding: 8px 24px; border-radius: 100px;
+    margin-bottom: 40px;
+    background: rgba(0,212,255,0.05);
+  }
+  .slide-cover .cover-title {
+    font-size: clamp(36px, 5vw, 64px); font-weight: 900;
+    letter-spacing: 2px; line-height: 1.2;
+    background: linear-gradient(180deg, #fff 0%, #00d4ff 70%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 20px;
+  }
+  .slide-cover .cover-subtitle {
+    font-size: 18px; color: var(--text-dim); font-weight: 300;
+    letter-spacing: 1px; margin-bottom: 50px;
+  }
+  .cover-divider {
+    width: 120px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin-bottom: 40px;
+  }
+  .cover-meta {
+    display: flex; gap: 40px; font-size: 13px; color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .cover-meta span { color: var(--primary); }
+
+  /* --- 章节标题 --- */
+  .slide-section {
+    align-items: flex-start; justify-content: center;
+  }
+  .slide-section .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 120px; font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(180deg, rgba(0,212,255,0.08) 0%, transparent 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: absolute; top: 40px; right: 80px;
+  }
+  .slide-section .section-title {
+    font-size: 42px; font-weight: 700; letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .slide-section .section-desc {
+    font-size: 16px; color: var(--text-dim); font-weight: 300;
+  }
+
+  /* --- 内容页 --- */
+  .slide-content { justify-content: center; }
+  .slide-content .slide-header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 48px;
+  }
+  .slide-content .slide-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--primary); letter-spacing: 1px;
+  }
+  .slide-content .slide-title {
+    font-size: 28px; font-weight: 700; letter-spacing: 1px;
+  }
+  .slide-content .content-grid {
+    display: grid; gap: 24px;
+  }
+  .slide-content .content-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .slide-content .content-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .slide-content .content-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  /* 卡片 */
+  .tech-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    transition: all var(--transition);
+    position: relative; overflow: hidden;
+  }
+  .tech-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    opacity: 0; transition: opacity var(--transition);
+  }
+  .tech-card:hover {
+    border-color: var(--border-bright);
+    box-shadow: 0 0 30px rgba(0,212,255,0.06);
+    transform: translateY(-2px);
+  }
+  .tech-card:hover::before { opacity: 1; }
+  .tech-card .card-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 16px;
+  }
+  .ci-blue { background: rgba(0,212,255,0.12); color: var(--primary); }
+  .ci-purple { background: rgba(124,92,252,0.12); color: var(--accent); }
+  .ci-green { background: rgba(0,230,118,0.12); color: var(--green); }
+  .ci-orange { background: rgba(255,145,0,0.12); color: var(--orange); }
+  .tech-card h4 { font-size: 16px; font-weight: 600; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .tech-card p { font-size: 13px; color: var(--text-dim); font-weight: 300; line-height: 1.6; }
+
+  /* 数据卡片 */
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    text-align: center;
+    transition: all var(--transition);
+  }
+  .stat-card:hover {
+    border-color: var(--border-bright);
+    box-shadow: 0 0 30px rgba(0,212,255,0.06);
+  }
+  .stat-card .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px; font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+  }
+  .stat-card .stat-label { font-size: 13px; color: var(--text-dim); }
+
+  /* 时间线 */
+  .timeline { position: relative; padding-left: 30px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
+    width: 1px; background: linear-gradient(180deg, var(--primary), var(--accent));
+    opacity: 0.3;
+  }
+  .timeline-item { position: relative; margin-bottom: 32px; }
+  .timeline-item:last-child { margin-bottom: 0; }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -26px; top: 6px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--primary); box-shadow: 0 0 10px var(--primary-glow);
+  }
+  .timeline-item .tl-date {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--primary); margin-bottom: 4px;
+  }
+  .timeline-item .tl-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .timeline-item .tl-desc { font-size: 13px; color: var(--text-dim); }
+
+  /* 代码块风格列表 */
+  .code-list { list-style: none; }
+  .code-list li {
+    font-family: 'JetBrains Mono', monospace;
+    padding: 14px 20px; margin-bottom: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px; color: var(--text-dim);
+    transition: all var(--transition);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .code-list li:hover { border-color: var(--border-bright); color: var(--text); }
+  .code-list li::before {
+    content: '>'; color: var(--primary); font-weight: 700;
+  }
+
+  /* 图片占位 */
+  .img-placeholder {
+    background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(124,92,252,0.06));
+    border: 1px solid var(--border); border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 200px; color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  /* 双栏布局 */
+  .split-layout {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+  }
+
+  /* ======== 底部导航 ======== */
+  .nav-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; padding: 20px;
+    background: linear-gradient(0deg, rgba(5,11,20,0.95) 0%, transparent 100%);
+  }
+  .nav-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all var(--transition);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .nav-btn:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 16px var(--primary-glow);
+    color: var(--primary);
+  }
+  .nav-btn:active { transform: scale(0.95); }
+  .slide-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--text-dim);
+    min-width: 60px; text-align: center;
+  }
+  .slide-dots { display: flex; gap: 6px; }
+  .slide-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-dim); cursor: pointer;
+    transition: all var(--transition);
+  }
+  .slide-dot.active {
+    background: var(--primary);
+    box-shadow: 0 0 8px var(--primary-glow);
+    width: 20px; border-radius: 3px;
+  }
+
+  /* 全屏提示 */
+  .hint {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: var(--text-dim); z-index: 50;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 1px; opacity: 0.6;
+    transition: opacity 0.5s;
+  }
+
+  /* 响应式 */
+  @media (max-width: 768px) {
+    .slide { padding: 40px 24px; }
+    .slide::before { left: 24px; top: 24px; }
+    .slide::after { right: 24px; bottom: 24px; }
+    .slide-content .content-grid.cols-2,
+    .slide-content .content-grid.cols-3,
+    .slide-content .content-grid.cols-4 { grid-template-columns: 1fr; }
+    .split-layout { grid-template-columns: 1fr; gap: 24px; }
+    .slide-section .section-num { font-size: 72px; right: 24px; top: 24px; }
+  }
+
+  /* 打印样式 */
+  @media print {
+    body { overflow: auto; height: auto; }
+    .slide { position: relative; opacity: 1; transform: none; page-break-after: always; pointer-events: auto; }
+    .nav-bar, .progress-bar, .bg-layer, .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 背景层 -->
+<div class="bg-layer">
+  <div class="bg-grid"></div>
+  <div class="bg-glow g1"></div>
+  <div class="bg-glow g2"></div>
+  <div class="bg-glow g3"></div>
+  <div class="particles" id="particles"></div>
+</div>
+
+<!-- 进度条 -->
+<div class="progress-bar" id="progressBar" style="width: 0%"></div>
+
+<!-- 键盘提示 -->
+<div class="hint" id="hint">← → 切换幻灯片 · F 全屏 · Esc 退出</div>
+
+<!-- 幻灯片容器 -->
+<div class="presentation">
+  <div class="slides-container" id="slidesContainer">
+
+    <!-- Slide 1: 封面 -->
+    <div class="slide slide-cover active" data-index="0">
+      <div class="cover-badge">TECH · 2026</div>
+      <div class="cover-title">科技感演示文稿</div>
+      <div class="cover-subtitle">基于 Web 技术的现代演示方案 · 响应式 · 交互式</div>
+      <div class="cover-divider"></div>
+      <div class="cover-meta">
+        <div>演讲人：<span>你的名字</span></div>
+        <div>日期：<span>2026.05</span></div>
+        <div>团队：<span>技术部</span></div>
+      </div>
+    </div>
+
+    <!-- Slide 2: 目录 -->
+    <div class="slide slide-section" data-index="1">
+      <div class="section-num">01</div>
+      <div class="section-title">目录</div>
+      <div class="section-desc">CONTENTS</div>
+      <div style="margin-top: 48px; display: flex; flex-direction: column; gap: 16px;">
+        <div class="tech-card" style="display:flex;align-items:center;gap:16px;padding:18px 24px;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--primary);">01</span>
+          <span style="font-size:17px;font-weight:500;">项目背景与目标</span>
+        </div>
+        <div class="tech-card" style="display:flex;align-items:center;gap:16px;padding:18px 24px;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--accent);">02</span>
+          <span style="font-size:17px;font-weight:500;">核心技术方案</span>
+        </div>
+        <div class="tech-card" style="display:flex;align-items:center;gap:16px;padding:18px 24px;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--green);">03</span>
+          <span style="font-size:17px;font-weight:500;">数据与成果展示</span>
+        </div>
+        <div class="tech-card" style="display:flex;align-items:center;gap:16px;padding:18px 24px;">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;color:var(--orange);">04</span>
+          <span style="font-size:17px;font-weight:500;">未来规划</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: 章节 - 项目背景 -->
+    <div class="slide slide-section" data-index="2">
+      <div class="section-num">01</div>
+      <div class="section-title">项目背景与目标</div>
+      <div class="section-desc">PROJECT BACKGROUND & GOALS</div>
+    </div>
+
+    <!-- Slide 4: 项目背景内容 -->
+    <div class="slide slide-content" data-index="3">
+      <div class="slide-header">
+        <span class="slide-num">01 / 背景</span>
+        <span class="slide-title">行业趋势与痛点分析</span>
+      </div>
+      <div class="content-grid cols-2">
+        <div class="tech-card">
+          <div class="card-icon ci-blue">📊</div>
+          <h4>市场规模增长</h4>
+          <p>全球云计算市场预计在 2026 年突破 8000 亿美元，企业数字化转型加速，对高性能 Web 应用需求持续攀升。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-orange">⚡</div>
+          <h4>性能瓶颈</h4>
+          <p>传统架构面临高并发、低延迟的双重挑战，68% 的用户在页面加载超过 3 秒时选择离开。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-purple">🔒</div>
+          <h4>安全合规要求</h4>
+          <p>数据安全法规日趋严格，GDPR 与《数据安全法》对企业技术架构提出更高要求。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-green">🎯</div>
+          <h4>用户体验升级</h4>
+          <p>用户期望跨设备无缝体验，PWA 与响应式设计成为行业标配，A11y 可访问性受重视。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: 章节 - 技术方案 -->
+    <div class="slide slide-section" data-index="4">
+      <div class="section-num">02</div>
+      <div class="section-title">核心技术方案</div>
+      <div class="section-desc">TECHNICAL ARCHITECTURE</div>
+    </div>
+
+    <!-- Slide 6: 技术架构 -->
+    <div class="slide slide-content" data-index="5">
+      <div class="slide-header">
+        <span class="slide-num">02 / 架构</span>
+        <span class="slide-title">系统架构设计</span>
+      </div>
+      <div class="split-layout">
+        <div class="img-placeholder" style="min-height:280px;">
+          [ 架构图占位 ]<br>
+          <span style="font-size:11px;opacity:0.6">Client → CDN → API Gateway → Microservices → DB</span>
+        </div>
+        <div>
+          <ul class="code-list">
+            <li>前端：React 18 + TypeScript + Vite</li>
+            <li>网关：Kong / Nginx 负载均衡</li>
+            <li>服务：Node.js 微服务 + gRPC</li>
+            <li>存储：PostgreSQL + Redis + MinIO</li>
+            <li>监控：Prometheus + Grafana + ELK</li>
+            <li>部署：Kubernetes + ArgoCD</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: 技术栈卡片 -->
+    <div class="slide slide-content" data-index="6">
+      <div class="slide-header">
+        <span class="slide-num">02 / 技术栈</span>
+        <span class="slide-title">关键技术选型</span>
+      </div>
+      <div class="content-grid cols-3">
+        <div class="tech-card">
+          <div class="card-icon ci-blue">⚛</div>
+          <h4>React 18</h4>
+          <p>Concurrent 模式，Suspense 数据获取，自动批处理优化渲染性能。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-purple">▲</div>
+          <h4>Next.js</h4>
+          <p>SSR / SSG / ISR 混合渲染策略，Edge Functions 全球低延迟。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-green">⚡</div>
+          <h4>Bun / Node.js</h4>
+          <p>高性能 Runtime，原生 TypeScript 支持，兼容 Node 生态。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-orange">🐳</div>
+          <h4>Docker & K8s</h4>
+          <p>容器化部署，自动扩缩容，滚动更新零停机。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-blue">🗄</div>
+          <h4>PostgreSQL</h4>
+          <p>主从复制 + 连接池，JSONB 半结构化数据高效查询。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-purple">🔴</div>
+          <h4>Redis</h4>
+          <p>多级缓存策略，Session 管理，限流计数器与消息队列。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8: 章节 - 数据成果 -->
+    <div class="slide slide-section" data-index="7">
+      <div class="section-num">03</div>
+      <div class="section-title">数据与成果展示</div>
+      <div class="section-desc">DATA & RESULTS</div>
+    </div>
+
+    <!-- Slide 9: 数据指标 -->
+    <div class="slide slide-content" data-index="8">
+      <div class="slide-header">
+        <span class="slide-num">03 / 数据</span>
+        <span class="slide-title">关键性能指标</span>
+      </div>
+      <div class="content-grid cols-4">
+        <div class="stat-card">
+          <div class="stat-value">99.9%</div>
+          <div class="stat-label">系统可用性 SLA</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">&lt;50ms</div>
+          <div class="stat-label">API P95 延迟</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">10M+</div>
+          <div class="stat-label">日均请求处理量</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">40%</div>
+          <div class="stat-label">性能提升幅度</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 10: 时间线 -->
+    <div class="slide slide-content" data-index="9">
+      <div class="slide-header">
+        <span class="slide-num">03 / 里程碑</span>
+        <span class="slide-title">项目发展历程</span>
+      </div>
+      <div class="split-layout">
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="tl-date">2025 Q3</div>
+            <div class="tl-title">项目立项 & 需求评审</div>
+            <div class="tl-desc">完成市场调研与技术选型，确定整体架构方案</div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-date">2025 Q4</div>
+            <div class="tl-title">MVP 版本开发</div>
+            <div class="tl-desc">核心功能开发完成，内部 Alpha 测试启动</div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-date">2026 Q1</div>
+            <div class="tl-title">Beta 公测上线</div>
+            <div class="tl-desc">开放 1000 名种子用户，收集反馈迭代</div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-date">2026 Q2</div>
+            <div class="tl-title">正式版发布 🎯</div>
+            <div class="tl-desc">全量上线，接入 CDN 全球加速，SLA 99.9%</div>
+          </div>
+        </div>
+        <div class="img-placeholder" style="min-height:260px;">
+          [ 路线图图表占位 ]<br>
+          <span style="font-size:11px;opacity:0.6">Roadmap Timeline</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 11: 章节 - 未来规划 -->
+    <div class="slide slide-section" data-index="10">
+      <div class="section-num">04</div>
+      <div class="section-title">未来规划</div>
+      <div class="section-desc">FUTURE ROADMAP</div>
+    </div>
+
+    <!-- Slide 12: 未来规划内容 -->
+    <div class="slide slide-content" data-index="11">
+      <div class="slide-header">
+        <span class="slide-num">04 / 规划</span>
+        <span class="slide-title">下一阶段重点方向</span>
+      </div>
+      <div class="content-grid cols-2">
+        <div class="tech-card">
+          <div class="card-icon ci-blue">🤖</div>
+          <h4>AI 能力集成</h4>
+          <p>引入大语言模型实现智能问答、代码辅助与自动化测试生成，提升研发效率 30%+。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-purple">🌐</div>
+          <h4>边缘计算扩展</h4>
+          <p>基于 Cloudflare Workers / Vercel Edge 实现全球 300+ 节点就近响应。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-green">📱</div>
+          <h4>跨端融合</h4>
+          <p>React Native / Flutter 实现移动端与桌面端全覆盖，统一设计语言与组件库。</p>
+        </div>
+        <div class="tech-card">
+          <div class="card-icon ci-orange">🔐</div>
+          <h4>零信任安全架构</h4>
+          <p>实施零信任网络模型，全链路 TLS + mTLS，实时威胁检测与自动响应。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 13: 结尾 -->
+    <div class="slide slide-cover" data-index="12">
+      <div class="cover-badge">THANK YOU</div>
+      <div class="cover-title">感谢聆听</div>
+      <div class="cover-subtitle">Questions & Discussion</div>
+      <div class="cover-divider"></div>
+      <div class="cover-meta">
+        <div>邮箱：<span>hello@example.com</span></div>
+        <div>GitHub：<span>github.com/yourname</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 底部导航栏 -->
+<div class="nav-bar">
+  <button class="nav-btn" id="btnPrev" title="上一页 (Left)">◀</button>
+  <div class="slide-dots" id="slideDots"></div>
+  <span class="slide-counter" id="slideCounter">1 / 13</span>
+  <button class="nav-btn" id="btnNext" title="下一页 (Right)">▶</button>
+</div>
+
+<script>
+  (function() {
+    // ======== 粒子背景 ========
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.bottom = -(Math.random() * 20) + 'px';
+      p.style.animationDuration = (8 + Math.random() * 20) + 's';
+      p.style.animationDelay = Math.random() * 15 + 's';
+      p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+      particlesContainer.appendChild(p);
+    }
+
+    // ======== 幻灯片逻辑 ========
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentIndex = 0;
+    let isTransitioning = false;
+
+    const progressBar = document.getElementById('progressBar');
+    const slideCounter = document.getElementById('slideCounter');
+    const slideDotsContainer = document.getElementById('slideDots');
+    const hint = document.getElementById('hint');
+
+    // 创建小圆点
+    for (let i = 0; i < totalSlides; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'slide-dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', () => goToSlide(i));
+      slideDotsContainer.appendChild(dot);
+    }
+
+    function updateUI() {
+      progressBar.style.width = ((currentIndex + 1) / totalSlides * 100) + '%';
+      slideCounter.textContent = (currentIndex + 1) + ' / ' + totalSlides;
+      const dots = slideDotsContainer.querySelectorAll('.slide-dot');
+      dots.forEach((d, i) => d.classList.toggle('active', i === currentIndex));
+    }
+
+    function goToSlide(index) {
+      if (isTransitioning || index === currentIndex || index < 0 || index >= totalSlides) return;
+      isTransitioning = true;
+
+      const oldSlide = slides[currentIndex];
+      const newSlide = slides[index];
+      const goingForward = index > currentIndex;
+
+      // 旧幻灯片退出
+      oldSlide.classList.remove('active');
+      oldSlide.classList.add(goingForward ? 'exit-left' : 'exit-left');
+      // 新幻灯片进入
+      newSlide.classList.remove('exit-left');
+      newSlide.style.transform = goingForward ? 'translateX(40px)' : 'translateX(-40px)';
+      requestAnimationFrame(() => {
+        newSlide.classList.add('active');
+        newSlide.style.transform = '';
+      });
+
+      currentIndex = index;
+      updateUI();
+
+      setTimeout(() => {
+        oldSlide.classList.remove('exit-left');
+        isTransitioning = false;
+      }, 500);
+    }
+
+    function nextSlide() { goToSlide(currentIndex + 1); }
+    function prevSlide() { goToSlide(currentIndex - 1); }
+
+    // 按钮事件
+    document.getElementById('btnNext').addEventListener('click', nextSlide);
+    document.getElementById('btnPrev').addEventListener('click', prevSlide);
+
+    // 键盘事件
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        goToSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        goToSlide(totalSlides - 1);
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) {
+          document.exitFullscreen();
+        } else {
+          document.documentElement.requestFullscreen();
+        }
+      }
+    });
+
+    // 触摸事件
+    let touchStartX = 0;
+    let touchStartY = 0;
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    });
+    document.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+        dx > 0 ? prevSlide() : nextSlide();
+      }
+    });
+
+    // 点击幻灯片区域前进（非按钮区域）
+    document.getElementById('slidesContainer').addEventListener('click', (e) => {
+      if (e.target.closest('button') || e.target.closest('.slide-dot') || e.target.closest('a')) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x > rect.width * 0.6) nextSlide();
+      else if (x < rect.width * 0.4) prevSlide();
+    });
+
+    // 定时隐藏提示
+    setTimeout(() => { hint.style.opacity = '0'; }, 5000);
+
+    // 初始更新
+    updateUI();
+  })();
+</script>
+
+</body>
+</html>

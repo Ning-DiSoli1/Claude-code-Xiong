@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手势缩放宇宙</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
+  canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; }
+
+  #video {
+    position: fixed; bottom: 20px; right: 20px; width: 160px; height: 120px;
+    border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
+    object-fit: cover; transform: scaleX(-1); z-index: 10; opacity: 0.7;
+    background: rgba(0,0,0,0.5);
+  }
+
+  #hint {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    z-index: 10; pointer-events: none; text-align: center;
+  }
+  #hint .label {
+    color: rgba(255,255,255,0.5); font-size: 13px; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  #hint .bar-track {
+    width: 200px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin: 0 auto;
+  }
+  #hint .bar-fill {
+    height: 100%; background: linear-gradient(90deg, #4488ff, #ffdd44, #ff6644);
+    border-radius: 2px; transition: width 0.15s;
+  }
+
+  #status {
+    position: fixed; top: 20px; right: 20px; z-index: 10; pointer-events: none;
+    padding: 8px 16px; border-radius: 16px; font-size: 12px; color: #888;
+    background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  #permission {
+    position: fixed; inset: 0; z-index: 100; display: flex;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(10,10,40,0.92) 0%, rgba(0,0,0,0.96) 100%);
+    cursor: pointer; transition: opacity 0.8s;
+  }
+  #permission.hidden { opacity: 0; pointer-events: none; }
+  #permission .btn {
+    padding: 16px 40px; border-radius: 30px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.05); color: #ccc;
+    font-size: 16px; cursor: pointer; letter-spacing: 1px;
+    transition: all 0.3s; backdrop-filter: blur(10px);
+  }
+  #permission .btn:hover {
+    background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.6);
+    box-shadow: 0 0 60px rgba(100,140,255,0.3); color: #fff;
+  }
+
+  @media (max-width: 768px) {
+    #video { width: 100px; height: 75px; bottom: 10px; right: 10px; }
+    #hint .bar-track { width: 140px; }
+  }
+</style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline></video>
+
+<div id="hint">
+  <div class="label">手靠近 → 放大 &nbsp;|&nbsp; 手远离 → 缩小</div>
+  <div class="bar-track"><div class="bar-fill" id="zoomBar" style="width:50%"></div></div>
+</div>
+<div id="status">等待摄像头...</div>
+
+<div id="permission">
+  <button class="btn" id="startBtn">点 击 进 入 宇 宙</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"
+  crossorigin="anonymous"></script>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.157.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ─── DOM ─────────────────────────────────────────
+const video = document.getElementById('video');
+const statusEl = document.getElementById('status');
+const zoomBar = document.getElementById('zoomBar');
+const permissionOverlay = document.getElementById('permission');
+const startBtn = document.getElementById('startBtn');
+
+// ─── Texture generation ──────────────────────────
+// Perlin-style noise
+const perm = new Uint8Array(512);
+(function initPerm() {
+  for (let i = 0; i < 256; i++) perm[i] = i;
+  for (let i = 255; i > 0; i--) {
+    const j = (i * 31 + 17) % (i + 1);
+    [perm[i], perm[j]] = [perm[j], perm[i]];
+  }
+  for (let i = 0; i < 256; i++) perm[i + 256] = perm[i];
+})();
+
+function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+function lerp(a, b, t) { return a + t * (b - a); }
+
+function grad(hash, x, y) {
+  const h = hash & 3;
+  const u = h < 2 ? x : y;
+  const v = h < 2 ? y : x;
+  return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+}
+
+function noise2D(x, y) {
+  const X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
+  const xf = x - Math.floor(x), yf = y - Math.floor(y);
+  const u = fade(xf), v = fade(yf);
+  const a = perm[perm[X] + Y], b = perm[perm[X + 1] + Y];
+  const c = perm[perm[X] + Y + 1], d = perm[perm[X + 1] + Y + 1];
+  return lerp(lerp(grad(a, xf, yf), grad(b, xf - 1, yf), u),
+             lerp(grad(c, xf, yf - 1), grad(d, xf - 1, yf - 1), u), v);
+}
+
+function fbm(x, y, octaves, lacunarity = 2.0, gain = 0.5) {
+  let value = 0, amplitude = 1, frequency = 1, maxVal = 0;
+  for (let i = 0; i < octaves; i++) {
+    value += noise2D(x * frequency, y * frequency) * amplitude;
+    maxVal += amplitude;
+    amplitude *= gain;
+    frequency *= lacunarity;
+  }
+  return value / maxVal;
+}
+
+function createCanvasTexture(width, height, drawFn) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  drawFn(ctx, width, height);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  return tex;
+}
+
+// ─── Earth texture (procedural continents + oceans) ──
+function generateEarthTexture() {
+  return createCanvasTexture(1024, 512, (ctx, w, h) => {
+    const img = ctx.createImageData(w, h);
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const nx = px / w, ny = py / h;
+        // Sphere mapping distorts near poles - compensate
+        const lat = (ny - 0.5) * Math.PI;
+        const lonScale = Math.cos(lat) || 0.001;
+        const sx = nx * 6, sy = ny * 6;
+
+        // Generate elevation using fbm
+        const e1 = fbm(sx * 1.2, sy * 1.2, 6, 2.3, 0.55);
+        const e2 = fbm(sx * 2.5 + 5, sy * 2.1 + 3, 4, 2.0, 0.5);
+        const elevation = (e1 * 0.7 + e2 * 0.3);
+
+        let r, g, b;
+        if (elevation < -0.05) {
+          // Deep ocean
+          const d = (elevation + 0.05) / 0.05 * 0.5 + 0.5;
+          r = 5 + d * 8; g = 25 + d * 30; b = 100 + d * 55;
+        } else if (elevation < 0.15) {
+          // Shallow ocean / continental shelf
+          const d = (elevation + 0.05) / 0.20;
+          r = lerp(15, 30, d); g = lerp(55, 100, d); b = lerp(160, 200, d);
+        } else if (elevation < 0.25) {
+          // Beach / coast
+          const d = (elevation - 0.15) / 0.10;
+          r = lerp(30, 200, d); g = lerp(100, 180, d); b = lerp(200, 140, d);
+        } else if (elevation < 0.5) {
+          // Grassland / plains
+          const d = (elevation - 0.25) / 0.25;
+          r = lerp(60, 40, d); g = lerp(150, 130, d); b = lerp(40, 25, d);
+        } else if (elevation < 0.7) {
+          // Forest / hills
+          const d = (elevation - 0.5) / 0.2;
+          r = lerp(30, 50, d); g = lerp(100, 90, d); b = lerp(20, 25, d);
+        } else {
+          // Mountains / high altitude
+          const d = Math.min(1, (elevation - 0.7) / 0.3);
+          r = lerp(50, 90, d); g = lerp(90, 95, d); b = lerp(25, 40, d);
+        }
+
+        // Add terrain detail noise
+        const detail = noise2D(sx * 8, sy * 8) * 0.06;
+        r = Math.min(255, Math.max(0, r + detail * 40));
+        g = Math.min(255, Math.max(0, g + detail * 30));
+        b = Math.min(255, Math.max(0, b + detail * 20));
+
+        // Ice caps at poles
+        const polarDist = Math.abs(ny - 0.5) * 2; // 0 at equator, 1 at poles
+        if (polarDist > 0.82) {
+          const ice = (polarDist - 0.82) / 0.18;
+          const iceAmount = Math.min(1, ice * 1.5);
+          r = r + (240 - r) * iceAmount;
+          g = g + (245 - g) * iceAmount;
+          b = b + (255 - b) * iceAmount;
+        }
+
+        // Desert band near ~25° latitude
+        const desertLat = Math.abs(ny - 0.3);
+        if (desertLat < 0.12 && elevation > 0.2 && elevation < 0.45) {
+          const desertFactor = (1 - desertLat / 0.12) * 0.4;
+          r = r + (210 - r) * desertFactor;
+          g = g + (170 - g) * desertFactor;
+          b = b + (100 - b) * desertFactor;
+        }
+
+        const idx = (py * w + px) * 4;
+        img.data[idx] = Math.round(r);
+        img.data[idx + 1] = Math.round(g);
+        img.data[idx + 2] = Math.round(b);
+        img.data[idx + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  });
+}
+
+// ─── Cloud texture ────────────────────────────────
+function generateCloudTexture() {
+  return createCanvasTexture(1024, 512, (ctx, w, h) => {
+    const img = ctx.createImageData(w, h);
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const sx = px / w * 5, sy = py / h * 5;
+        const c = fbm(sx * 1.8, sy * 1.5 + 2, 5, 2.5, 0.55);
+        const a = Math.max(0, (c - 0.15) * 1.5) * 0.8;
+        const idx = (py * w + px) * 4;
+        img.data[idx] = 255;
+        img.data[idx + 1] = 255;
+        img.data[idx + 2] = 255;
+        img.data[idx + 3] = Math.round(Math.min(255, a * 255));
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  });
+}
+
+// ─── Sun texture (granulation + sunspots) ─────────
+function generateSunTexture() {
+  return createCanvasTexture(512, 256, (ctx, w, h) => {
+    const img = ctx.createImageData(w, h);
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const sx = px / w * 8, sy = py / h * 8;
+        const n1 = fbm(sx, sy, 4, 2.5, 0.6);
+        const n2 = noise2D(sx * 3, sy * 3) * 0.25;
+        const n3 = noise2D(sx * 7 + 10, sy * 7) * 0.1;
+        let brightness = 0.7 + n1 * 0.3 + n2 + n3;
+
+        // Sunspots
+        const spotCheck1 = noise2D(sx * 0.7 + 3, sy * 0.7 + 1);
+        const spotCheck2 = noise2D(sx * 0.7 + 8, sy * 0.7 + 4);
+        if (spotCheck1 < -0.35 && spotCheck2 < -0.3) {
+          brightness *= 0.25 + (spotCheck1 + 0.35) * 2;
+        }
+
+        brightness = Math.max(0, Math.min(1, brightness));
+        // Yellow-orange gradient
+        const r = 1.0 * brightness;
+        const g = (0.5 + brightness * 0.5) * brightness;
+        const b = brightness * brightness * 0.15;
+
+        const idx = (py * w + px) * 4;
+        img.data[idx] = Math.round(r * 255);
+        img.data[idx + 1] = Math.round(g * 255);
+        img.data[idx + 2] = Math.round(b * 255);
+        img.data[idx + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  });
+}
+
+// ─── Moon texture (craters) ───────────────────────
+function generateMoonTexture() {
+  return createCanvasTexture(256, 128, (ctx, w, h) => {
+    const img = ctx.createImageData(w, h);
+    for (let py = 0; py < h; py++) {
+      for (let px = 0; px < w; px++) {
+        const sx = px / w * 4, sy = py / h * 4;
+        const base = fbm(sx, sy, 4, 2.3, 0.55);
+        let brightness = 0.45 + base * 0.55;
+
+        // Craters
+        const craterNoise = fbm(sx + 2, sy + 1, 3, 3.0, 0.5);
+        if (craterNoise > 0.3) {
+          brightness = brightness * 0.7 + craterNoise * 0.3;
+        }
+
+        brightness = Math.max(0, Math.min(1, brightness));
+        const v = Math.round(brightness * 210 + 35);
+        const idx = (py * w + px) * 4;
+        img.data[idx] = v;
+        img.data[idx + 1] = v;
+        img.data[idx + 2] = v;
+        img.data[idx + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  });
+}
+
+// Pre-generate all textures
+const earthTex = generateEarthTexture();
+const cloudTex = generateCloudTexture();
+const sunTex = generateSunTexture();
+const moonTex = generateMoonTexture();
+
+// ─── Three.js setup ──────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000008);
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 2, 16);
+camera.lookAt(0, 0, 0);
+
+// ─── Lighting ────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x111122, 0.4));
+const sunLight = new THREE.PointLight(0xffffdd, 80, 30, 1.5);
+sunLight.position.set(0, 0, 0);
+scene.add(sunLight);
+const sunLight2 = new THREE.PointLight(0xffcc88, 25, 12, 2);
+sunLight2.position.set(0, 0, 0);
+scene.add(sunLight2);
+
+// ─── Helper: glow texture (for coronas / atmospheres) ──
+function makeGlowTexture(inner, outer, size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+  g.addColorStop(0, inner);
+  g.addColorStop(0.12, inner);
+  g.addColorStop(0.35, outer);
+  g.addColorStop(0.7, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// ─── Sun ─────────────────────────────────────────
+const sunGroup = new THREE.Group();
+scene.add(sunGroup);
+
+const sunGeo = new THREE.SphereGeometry(0.5, 64, 64);
+const sunMat = new THREE.MeshBasicMaterial({ map: sunTex, color: new THREE.Color(1, 0.95, 0.7) });
+sunGroup.add(new THREE.Mesh(sunGeo, sunMat));
+
+// Inner corona
+const corInGeo = new THREE.SphereGeometry(0.62, 32, 32);
+const corInMat = new THREE.ShaderMaterial({
+  uniforms: { uTex: { value: makeGlowTexture('rgba(255,220,80,0.95)', 'rgba(255,140,20,0.5)', 128) } },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec2 vUv; uniform sampler2D uTex;
+    void main() { float a = texture2D(uTex, vUv).a; gl_FragColor = vec4(1.0, 0.65, 0.12, a * 0.55); }`,
+  blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+});
+sunGroup.add(new THREE.Mesh(corInGeo, corInMat));
+
+// Outer corona
+const corOutGeo = new THREE.SphereGeometry(0.78, 32, 32);
+const corOutMat = new THREE.ShaderMaterial({
+  uniforms: { uTex: { value: makeGlowTexture('rgba(255,160,40,0.8)', 'rgba(255,60,10,0.2)', 128) } },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec2 vUv; uniform sampler2D uTex;
+    void main() { float a = texture2D(uTex, vUv).a; gl_FragColor = vec4(1.0, 0.35, 0.03, a * 0.28); }`,
+  blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+});
+sunGroup.add(new THREE.Mesh(corOutGeo, corOutMat));
+
+// ─── Planets ─────────────────────────────────────
+const planets = [];
+function createPlanet(radius, color, orbitRadius, orbitSpeed, roughness = 0.7) {
+  const geo = new THREE.SphereGeometry(radius, 32, 32);
+  const mat = new THREE.MeshStandardMaterial({ color, roughness, metalness: 0.05 });
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+  // Orbit ring
+  const ringGeo = new THREE.TorusGeometry(orbitRadius, 0.006, 8, 128);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0x334466, transparent: true, opacity: 0.2 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI / 2;
+  scene.add(ring);
+  return { mesh, orbitRadius, orbitSpeed, angle: Math.random() * Math.PI * 2 };
+}
+
+planets.push(createPlanet(0.04, 0x999999, 1.0, 4.0, 0.8));   // Mercury
+planets.push(createPlanet(0.09, 0xddcc88, 1.6, 2.8, 0.6));   // Venus
+planets.push(createPlanet(0.07, 0xcc6644, 4.2, 1.4, 0.7));   // Mars
+
+// ─── Earth system ────────────────────────────────
+const earthOrbit = 3.0;
+const earthGroup = new THREE.Group();
+scene.add(earthGroup);
+
+// Earth
+const earthGeo = new THREE.SphereGeometry(0.14, 64, 64);
+const earthMat = new THREE.MeshStandardMaterial({
+  map: earthTex, roughness: 0.75, metalness: 0.02,
+});
+const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+earthGroup.add(earthMesh);
+
+// Cloud layer
+const cloudGeo = new THREE.SphereGeometry(0.146, 48, 48);
+const cloudMat = new THREE.MeshStandardMaterial({
+  map: cloudTex, transparent: true, opacity: 0.45,
+  roughness: 1.0, metalness: 0, depthWrite: false,
+});
+const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+earthGroup.add(cloudMesh);
+
+// Atmosphere glow
+const atmoGeo = new THREE.SphereGeometry(0.16, 40, 40);
+const atmoMat = new THREE.ShaderMaterial({
+  uniforms: { uTex: { value: makeGlowTexture('rgba(100,180,255,0.8)', 'rgba(60,130,255,0.3)', 128) } },
+  vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec2 vUv; uniform sampler2D uTex;
+    void main() { float a = texture2D(uTex, vUv).a; gl_FragColor = vec4(0.35, 0.55, 1.0, a * 0.3); }`,
+  blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+});
+earthGroup.add(new THREE.Mesh(atmoGeo, atmoMat));
+
+// Moon
+const moonGeo = new THREE.SphereGeometry(0.035, 24, 24);
+const moonMat = new THREE.MeshStandardMaterial({ map: moonTex, roughness: 0.85, metalness: 0 });
+const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+earthGroup.add(moonMesh);
+
+// Earth orbit ring
+const earthRingGeo = new THREE.TorusGeometry(earthOrbit, 0.008, 16, 200);
+const earthRingMat = new THREE.MeshBasicMaterial({ color: 0x446688, transparent: true, opacity: 0.25 });
+const earthRing = new THREE.Mesh(earthRingGeo, earthRingMat);
+earthRing.rotation.x = Math.PI / 2;
+scene.add(earthRing);
+
+// ─── Instanced stars ─────────────────────────────
+const STAR_COUNT = 5000;
+const starGeo = new THREE.SphereGeometry(1, 6, 4);
+const starColorArr = new Float32Array(STAR_COUNT * 3);
+const dummy = new THREE.Object3D();
+const starMesh = new THREE.InstancedMesh(starGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }), STAR_COUNT);
+
+const starTemps = [
+  { min: 0.55, max: 0.7, gBias: 0.85, bBias: 0.7 },
+  { min: 0.7, max: 0.9, gBias: 0.9, bBias: 0.85 },
+  { min: 0.8, max: 1.0, gBias: 0.95, bBias: 1.0 },
+  { min: 0.7, max: 0.9, gBias: 0.85, bBias: 1.0 },
+];
+
+for (let i = 0; i < STAR_COUNT; i++) {
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  const r = 6 + Math.pow(Math.random(), 0.6) * 35;
+  dummy.position.set(Math.sin(phi) * Math.cos(theta) * r, Math.sin(phi) * Math.sin(theta) * r * 0.7, Math.cos(phi) * r);
+  dummy.scale.setScalar(0.02 + Math.random() * 0.1);
+  dummy.updateMatrix();
+  starMesh.setMatrixAt(i, dummy.matrix);
+
+  const temp = starTemps[Math.floor(Math.random() * starTemps.length)];
+  starColorArr[i * 3] = temp.min + Math.random() * (temp.max - temp.min);
+  starColorArr[i * 3 + 1] = starColorArr[i * 3] * temp.gBias * (0.7 + Math.random() * 0.3);
+  starColorArr[i * 3 + 2] = starColorArr[i * 3] * temp.bBias * (0.7 + Math.random() * 0.3);
+}
+starMesh.instanceColor = new THREE.InstancedBufferAttribute(starColorArr, 3);
+scene.add(starMesh);
+
+// ─── Distant colored planets (instanced) ──────────
+const PLANET_COUNT = 200;
+const planetGeo2 = new THREE.SphereGeometry(1, 10, 8);
+const planetColorArr = new Float32Array(PLANET_COUNT * 3);
+const planetMesh = new THREE.InstancedMesh(planetGeo2, new THREE.MeshStandardMaterial({ roughness: 0.6 }), PLANET_COUNT);
+
+for (let i = 0; i < PLANET_COUNT; i++) {
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  const r = 5 + Math.random() * 20;
+  dummy.position.set(Math.sin(phi) * Math.cos(theta) * r, Math.sin(phi) * Math.sin(theta) * r * 0.6, Math.cos(phi) * r);
+  dummy.scale.setScalar(0.08 + Math.random() * 0.2);
+  dummy.updateMatrix();
+  planetMesh.setMatrixAt(i, dummy.matrix);
+
+  const hues = [0.0, 0.55, 0.65, 0.75, 0.05, 0.15, 0.35, 0.85];
+  const hue = hues[Math.floor(Math.random() * hues.length)];
+  const rgb = new THREE.Color().setHSL(hue, 0.7 + Math.random() * 0.3, 0.4 + Math.random() * 0.35);
+  planetColorArr[i * 3] = rgb.r;
+  planetColorArr[i * 3 + 1] = rgb.g;
+  planetColorArr[i * 3 + 2] = rgb.b;
+}
+planetMesh.instanceColor = new THREE.InstancedBufferAttribute(planetColorArr, 3);
+scene.add(planetMesh);
+
+// ─── Nebula sprites ──────────────────────────────
+for (let i = 0; i < 8; i++) {
+  const nebTex = makeGlowTexture(
+    `rgba(${150+Math.random()*105},${80+Math.random()*100},${180+Math.random()*75},0.5)`,
+    `rgba(${30+Math.random()*50},${10+Math.random()*30},${80+Math.random()*100},0.05)`, 256);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: nebTex, blending: THREE.AdditiveBlending, depthWrite: false,
+    transparent: true, opacity: 0.12 + Math.random() * 0.18,
+  }));
+  sprite.position.set((Math.random()-0.5)*30, (Math.random()-0.5)*20, (Math.random()-0.5)*25 - 5);
+  sprite.scale.set(6+Math.random()*14, 4+Math.random()*10, 1);
+  scene.add(sprite);
+}
+
+// ─── Shared state ────────────────────────────────
+let handData = null;
+let targetZoom = 0.5;
+let currentZoom = 0.5;
+
+// ─── MediaPipe Hands ─────────────────────────────
+const hands = new Hands({
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`,
+});
+hands.setOptions({
+  maxNumHands: 1, modelComplexity: 1,
+  minDetectionConfidence: 0.6, minTrackingConfidence: 0.5,
+});
+hands.onResults((results) => {
+  handData = (results.multiHandLandmarks && results.multiHandLandmarks.length > 0)
+    ? results.multiHandLandmarks[0] : null;
+});
+
+let cameraUtils = null;
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' },
+    });
+    video.srcObject = stream;
+    await video.play();
+
+    const CameraCtor = window.Camera;
+    if (typeof CameraCtor === 'undefined') throw new Error('Camera 工具类未加载');
+    cameraUtils = new CameraCtor(video, {
+      onFrame: async () => { await hands.send({ image: video }); },
+      width: 640, height: 480,
+    });
+    await cameraUtils.start();
+    statusEl.textContent = '🌌 宇宙探索中';
+    statusEl.style.color = '#aaa';
+  } catch (err) {
+    statusEl.textContent = '⚠ ' + err.message;
+    statusEl.style.color = '#ff6b6b';
+    console.error(err);
+  }
+}
+
+// ─── Hand proximity ──────────────────────────────
+function getHandProximity(landmarks) {
+  const wrist = landmarks[0], midMcp = landmarks[9];
+  const palmSize = Math.hypot(midMcp.x - wrist.x, midMcp.y - wrist.y);
+  return Math.max(0, Math.min(1, (palmSize - 0.04) / 0.25));
+}
+
+// ─── Animation ───────────────────────────────────
+const clock = new THREE.Clock();
+let earthWorldPos = new THREE.Vector3(3, 0, 0);
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const dt = Math.min(clock.getDelta(), 0.1);
+  const t = performance.now() * 0.001;
+
+  // Hand proximity → zoom
+  if (handData) {
+    targetZoom = getHandProximity(handData);
+  } else {
+    targetZoom += (0.5 - targetZoom) * 0.3 * dt;
+  }
+  currentZoom += (targetZoom - currentZoom) * 4 * dt;
+  zoomBar.style.width = (currentZoom * 100).toFixed(0) + '%';
+
+  // Camera distance
+  const camZ = 25 - currentZoom * 23.2;
+  const camY = 2 - currentZoom * 1.5;
+
+  // Earth orbit
+  const earthAngle = t * 0.5;
+  const earthX = Math.cos(earthAngle) * earthOrbit;
+  const earthZ = Math.sin(earthAngle) * earthOrbit;
+  earthGroup.position.set(earthX, 0, earthZ);
+  earthWorldPos.set(earthX, 0, earthZ);
+
+  // Moon orbit + rotation
+  const moonAngle = t * 3.5;
+  moonMesh.position.set(Math.cos(moonAngle) * 0.25, Math.sin(moonAngle * 0.3) * 0.04, Math.sin(moonAngle) * 0.25);
+
+  // Other planets
+  planets.forEach(p => {
+    p.angle += p.orbitSpeed * dt;
+    p.mesh.position.set(Math.cos(p.angle) * p.orbitRadius, (Math.random()-0.5)*0.02, Math.sin(p.angle) * p.orbitRadius);
+  });
+
+  // Look target: Sun when zoomed out, Earth when zoomed in
+  const lookTarget = new THREE.Vector3();
+  if (currentZoom > 0.7) {
+    lookTarget.copy(earthWorldPos);
+  } else if (currentZoom < 0.3) {
+    lookTarget.set(0, 0, 0);
+  } else {
+    const t2 = (currentZoom - 0.3) / 0.4;
+    lookTarget.lerpVectors(new THREE.Vector3(0, 0, 0), earthWorldPos, t2);
+  }
+
+  camera.position.x += ((earthWorldPos.x * 0.3 * currentZoom) - camera.position.x) * 2 * dt;
+  camera.position.y += (camY - camera.position.y) * 2 * dt;
+  camera.position.z += (camZ - camera.position.z) * 2 * dt;
+  camera.lookAt(lookTarget);
+
+  // Earth & cloud rotation
+  earthMesh.rotation.y += dt * 0.5;
+  cloudMesh.rotation.y += dt * 0.53;
+  cloudMesh.rotation.x += dt * 0.02;
+
+  // Sun rotation
+  sunGroup.rotation.y += dt * 0.04;
+  sunLight.intensity = 75 + Math.sin(t * 2.5) * 5 + Math.sin(t * 5.5) * 3;
+
+  // Background rotation
+  starMesh.rotation.y += dt * 0.015;
+  starMesh.rotation.x += dt * 0.005;
+  planetMesh.rotation.y += dt * 0.012;
+  planetMesh.rotation.x += dt * 0.004;
+
+  // Star twinkling
+  if (Math.floor(t * 12) % 4 === 0) {
+    const idx = Math.floor(Math.random() * STAR_COUNT);
+    const b = 0.5 + Math.random() * 0.5;
+    starMesh.instanceColor.array[idx * 3] = Math.min(1, starColorArr[idx * 3] * b);
+    starMesh.instanceColor.array[idx * 3 + 1] = Math.min(1, starColorArr[idx * 3 + 1] * b);
+    starMesh.instanceColor.array[idx * 3 + 2] = Math.min(1, starColorArr[idx * 3 + 2] * b);
+    starMesh.instanceColor.needsUpdate = true;
+  }
+
+  // Exposure
+  renderer.toneMappingExposure = 0.7 + currentZoom * 0.6;
+
+  renderer.render(scene, camera);
+}
+
+// ─── Events ──────────────────────────────────────
+startBtn.addEventListener('click', async () => {
+  permissionOverlay.classList.add('hidden');
+  await startCamera();
+});
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// ─── Start ───────────────────────────────────────
+animate();
+</script>
+</body>
+</html>

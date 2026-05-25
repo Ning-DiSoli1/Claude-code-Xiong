@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美股 K线图</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface-hover: #1a2332;
+    --border: rgba(0, 212, 255, 0.15);
+    --primary: #00d4ff;
+    --primary-dim: rgba(0, 212, 255, 0.12);
+    --accent: #7c5cfc;
+    --text: #e2e8f0;
+    --text-dim: #8892a4;
+    --green: #22c55e;
+    --red: #ef4444;
+    --radius: 16px;
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'Noto Sans SC', 'JetBrains Mono', monospace, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.7;
+  }
+
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; opacity: 0.04;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.3) 1px, transparent 1px);
+    background-size: 60px 60px; pointer-events: none;
+  }
+  .bg-glow {
+    position: fixed; width: 600px; height: 600px; border-radius: 50%;
+    filter: blur(180px); opacity: 0.06; pointer-events: none; z-index: 0;
+  }
+  .bg-glow.g1 { top: -200px; left: -100px; background: var(--primary); }
+  .bg-glow.g2 { bottom: -200px; right: -100px; background: var(--accent); }
+
+  .container { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 24px 24px 60px; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    gap: 16px; margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 24px; font-weight: 700;
+    background: linear-gradient(135deg, #e2e8f0 0%, #00d4ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .controls {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .symbol-input {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 10px 16px; font-size: 14px; font-family: 'JetBrains Mono', monospace;
+    width: 140px; outline: none; transition: border-color var(--transition);
+    text-transform: uppercase;
+  }
+  .symbol-input:focus { border-color: var(--primary); }
+
+  .range-btn {
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-dim); cursor: pointer;
+    font-size: 13px; font-family: inherit; transition: all var(--transition);
+  }
+  .range-btn:hover { border-color: var(--primary); color: var(--text); }
+  .range-btn.active {
+    background: var(--primary-dim); border-color: var(--primary); color: var(--primary);
+  }
+
+  .price-bar {
+    display: flex; gap: 32px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .price-item { font-size: 14px; }
+  .price-item .label { color: var(--text-dim); font-size: 12px; margin-bottom: 2px; }
+  .price-item .value { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 20px; }
+  .price-item .change { font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 16px;
+  }
+  #kline-chart { width: 100%; height: 520px; }
+  #volume-chart { width: 100%; height: 140px; }
+
+  .loading-overlay {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(10,14,23,0.7); z-index: 10; border-radius: var(--radius);
+    pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  }
+  .loading-overlay.show { opacity: 1; pointer-events: all; }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg {
+    color: var(--red); font-size: 13px; margin-left: 12px; display: none;
+  }
+  .error-msg.show { display: inline; }
+
+  .stock-list {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .stock-chip {
+    padding: 4px 10px; border-radius: 6px; font-size: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-dim); cursor: pointer; transition: all var(--transition);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stock-chip:hover { border-color: var(--primary); color: var(--primary); }
+
+  .footer { text-align: center; padding-top: 20px; font-size: 12px; color: var(--text-dim); }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  .green { color: var(--green); }
+  .red { color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow g1"></div>
+<div class="bg-glow g2"></div>
+
+<div class="container">
+  <div class="header">
+    <h1>US Stock · K线图</h1>
+    <div class="controls">
+      <input class="symbol-input" id="symbol" value="AAPL" placeholder="输入代码" maxlength="10">
+      <button class="range-btn active" data-range="1mo">1月</button>
+      <button class="range-btn" data-range="3mo">3月</button>
+      <button class="range-btn" data-range="6mo">6月</button>
+      <button class="range-btn" data-range="1y">1年</button>
+      <button class="range-btn" data-range="2y">2年</button>
+      <span class="error-msg" id="error-msg"></span>
+    </div>
+  </div>
+
+  <div class="stock-list" style="margin-bottom:16px">
+    <span style="font-size:12px;color:var(--text-dim);margin-right:4px">热门:</span>
+    <span class="stock-chip">AAPL</span>
+    <span class="stock-chip">GOOGL</span>
+    <span class="stock-chip">MSFT</span>
+    <span class="stock-chip">AMZN</span>
+    <span class="stock-chip">TSLA</span>
+    <span class="stock-chip">NVDA</span>
+    <span class="stock-chip">META</span>
+    <span class="stock-chip">NFLX</span>
+    <span class="stock-chip">AMD</span>
+    <span class="stock-chip">INTC</span>
+    <span class="stock-chip">BABA</span>
+    <span class="stock-chip">SPY</span>
+  </div>
+
+  <div class="price-bar" id="price-bar" style="display:none">
+    <div class="price-item">
+      <div class="label">最新价</div>
+      <div class="value" id="price-last">-</div>
+    </div>
+    <div class="price-item">
+      <div class="label">涨跌额</div>
+      <div class="value" id="price-change">-</div>
+    </div>
+    <div class="price-item">
+      <div class="label">涨跌幅</div>
+      <div class="value" id="price-change-pct">-</div>
+    </div>
+    <div class="price-item">
+      <div class="label">最高</div>
+      <div class="value" id="price-high">-</div>
+    </div>
+    <div class="price-item">
+      <div class="label">最低</div>
+      <div class="value" id="price-low">-</div>
+    </div>
+    <div class="price-item">
+      <div class="label">成交量</div>
+      <div class="value" id="price-vol">-</div>
+    </div>
+  </div>
+
+  <div style="position:relative">
+    <div class="chart-card">
+      <div id="kline-chart"></div>
+    </div>
+    <div class="chart-card" style="margin-top:2px">
+      <div id="volume-chart"></div>
+    </div>
+    <div class="loading-overlay" id="loading">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span id="footer-text">数据加载中...</span> · Built by DISol
+  </div>
+</div>
+
+<script>
+const symbolInput = document.getElementById('symbol');
+const errorMsg = document.getElementById('error-msg');
+const loading = document.getElementById('loading');
+const priceBar = document.getElementById('price-bar');
+
+let currentRange = '1mo';
+let klineChart, volumeChart;
+
+function initCharts() {
+  klineChart = echarts.init(document.getElementById('kline-chart'), 'dark');
+  volumeChart = echarts.init(document.getElementById('volume-chart'), 'dark');
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.classList.add('show');
+  setTimeout(() => errorMsg.classList.remove('show'), 4000);
+}
+
+function formatVol(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+
+function formatNum(n, decimals) {
+  if (decimals === undefined) decimals = 2;
+  return Number(n).toFixed(decimals);
+}
+
+function calcMA(data, dayCount) {
+  const result = [];
+  for (let i = 0; i < data.length; i++) {
+    if (i < dayCount - 1) { result.push(null); continue; }
+    let sum = 0;
+    for (let j = i - dayCount + 1; j <= i; j++) sum += data[j][2]; // close
+    result.push(+(sum / dayCount).toFixed(2));
+  }
+  return result;
+}
+
+async function fetchData(symbol, range) {
+  const url = `/api/stock?symbol=${encodeURIComponent(symbol)}&range=${range}`;
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${resp.status}`);
+  }
+  const data = await resp.json();
+  // Server returns pre-parsed data with ohlc, vols, dates, meta, isDemo
+  data.ma5 = calcMA(data.ohlc, 5);
+  data.ma10 = calcMA(data.ohlc, 10);
+  data.ma20 = calcMA(data.ohlc, 20);
+  data.ma30 = calcMA(data.ohlc, 30);
+  return data;
+}
+
+function updatePriceBar(meta, ohlc, isDemo) {
+  const last = ohlc[ohlc.length - 1];
+  const prev = ohlc.length > 1 ? ohlc[ohlc.length - 2] : null;
+  const close = last[1];
+  const prevClose = meta.previousClose || (prev ? prev[1] : close);
+  const change = close - prevClose;
+  const changePct = ((change / prevClose) * 100);
+  const cls = change >= 0 ? 'green' : 'red';
+
+  document.getElementById('price-last').innerHTML = `<span class="${cls}">${formatNum(close)}</span>`;
+  document.getElementById('price-change').innerHTML = `<span class="${cls}">${change >= 0 ? '+' : ''}${formatNum(change)}</span>`;
+  document.getElementById('price-change-pct').innerHTML = `<span class="${cls}">${change >= 0 ? '+' : ''}${formatNum(changePct)}%</span>`;
+  document.getElementById('price-high').textContent = formatNum(meta.regularMarketDayHigh || meta.regularMarketDayHigh === 0 ? meta.regularMarketDayHigh : '-');
+  document.getElementById('price-low').textContent = formatNum(meta.regularMarketDayLow || meta.regularMarketDayLow === 0 ? meta.regularMarketDayLow : '-');
+  document.getElementById('price-vol').textContent = meta.regularMarketVolume ? formatVol(meta.regularMarketVolume) : '-';
+  priceBar.style.display = 'flex';
+
+  const symbol = meta.symbol || '';
+  document.getElementById('footer-text').textContent = isDemo
+    ? `${symbol} · 演示数据（仅供参考）`
+    : `${symbol} · Yahoo Finance 实时数据`;
+}
+
+function renderCharts(data) {
+  const upColor = '#22c55e';
+  const downColor = '#ef4444';
+
+  // K-line
+  klineChart.setOption({
+    animation: false,
+    grid: { left: '8%', right: '2%', top: 16, bottom: 0 },
+    xAxis: { type: 'category', data: data.dates, axisLabel: { color: '#8892a4', fontSize: 11 }, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } }, axisTick: { show: false } },
+    yAxis: {
+      scale: true,
+      axisLabel: { color: '#8892a4', fontSize: 11, formatter: v => v.toFixed(1) },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)' } },
+      axisLine: { show: false }, axisTick: { show: false }
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross' },
+      backgroundColor: 'rgba(17,24,39,0.95)',
+      borderColor: 'rgba(0,212,255,0.2)',
+      textStyle: { fontSize: 12, fontFamily: 'JetBrains Mono, monospace' },
+      formatter: function(params) {
+        const d = params[0];
+        if (!d) return '';
+        const v = d.data;
+        if (!v || v.length < 5) return '';
+        const types = ['开', '收', '低', '高'];
+        let html = `<div style="font-size:13px;margin-bottom:4px;color:#00d4ff">${d.name}</div>`;
+        for (let i = 1; i <= 4; i++) {
+          const color = i === 1 ? (v[1] >= v[2] ? upColor : downColor) : (v[i] >= v[1] ? upColor : downColor);
+          html += `<div style="display:flex;justify-content:space-between;gap:24px"><span>${types[i-1]}</span><span style="color:${color};font-weight:500">${v[i]}</span></div>`;
+        }
+        return html;
+      }
+    },
+    series: [
+      {
+        name: 'K线', type: 'candlestick', data: data.ohlc,
+        itemStyle: { color: upColor, color0: downColor, borderColor: upColor, borderColor0: downColor },
+        markLine: { silent: true, symbol: 'none', lineStyle: { type: 'dashed', color: 'rgba(255,255,255,0.08)' }, data: [{ yAxis: data.ohlc[data.ohlc.length - 1][1], label: { show: false } }] }
+      },
+      { name: 'MA5', type: 'line', data: data.ma5, smooth: true, symbol: 'none', lineStyle: { width: 1, color: '#f59e0b' } },
+      { name: 'MA10', type: 'line', data: data.ma10, smooth: true, symbol: 'none', lineStyle: { width: 1, color: '#3b82f6' } },
+      { name: 'MA20', type: 'line', data: data.ma20, smooth: true, symbol: 'none', lineStyle: { width: 1, color: '#a855f7' } },
+      { name: 'MA30', type: 'line', data: data.ma30, smooth: true, symbol: 'none', lineStyle: { width: 1, color: '#ec4899' } }
+    ]
+  }, true);
+
+  // Volume
+  volumeChart.setOption({
+    animation: false,
+    grid: { left: '8%', right: '2%', top: 8, bottom: 8 },
+    xAxis: { type: 'category', data: data.dates, axisLabel: { show: false }, axisLine: { show: false }, axisTick: { show: false } },
+    yAxis: {
+      axisLabel: { color: '#8892a4', fontSize: 10, formatter: v => formatVol(v) },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)' } },
+      axisLine: { show: false }, axisTick: { show: false }
+    },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(17,24,39,0.95)',
+      borderColor: 'rgba(0,212,255,0.2)',
+      textStyle: { fontSize: 12 },
+      formatter: function(params) {
+        const d = params[0];
+        return `<div style="font-size:13px;margin-bottom:4px;color:#00d4ff">${d.name}</div>成交量: ${formatVol(d.data[1])}`;
+      }
+    },
+    series: [{
+      type: 'bar', data: data.vols,
+      itemStyle: {
+        color: function(p) {
+          const idx = p.dataIndex;
+          if (idx < 0 || idx >= data.ohlc.length) return downColor;
+          return data.ohlc[idx][1] >= data.ohlc[idx][0] ? upColor : downColor;
+        }
+      }
+    }]
+  }, true);
+}
+
+async function loadStock(symbol, range) {
+  loading.classList.add('show');
+  errorMsg.classList.remove('show');
+  try {
+    const data = await fetchData(symbol, range);
+    updatePriceBar(data.meta, data.ohlc, data.isDemo);
+    renderCharts(data);
+  } catch (e) {
+    showError(e.message);
+    priceBar.style.display = 'none';
+    document.getElementById('footer-text').textContent = '数据加载失败';
+  } finally {
+    loading.classList.remove('show');
+  }
+}
+
+// Events
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentRange = this.dataset.range;
+    loadStock(symbolInput.value.trim().toUpperCase(), currentRange);
+  });
+});
+
+document.querySelectorAll('.stock-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    symbolInput.value = this.textContent.trim();
+    loadStock(symbolInput.value.trim().toUpperCase(), currentRange);
+  });
+});
+
+symbolInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    loadStock(this.value.trim().toUpperCase(), currentRange);
+  }
+});
+
+window.addEventListener('resize', () => {
+  klineChart && klineChart.resize();
+  volumeChart && volumeChart.resize();
+});
+
+// Init
+initCharts();
+loadStock('AAPL', '1mo');
+</script>
+</body>
+</html>

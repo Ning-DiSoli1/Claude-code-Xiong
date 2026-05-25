@@ -1,0 +1,221 @@
+================================================================
+         安全漏洞检测报告
+         目标: www.qzhiyuan.com / erp.gaokaoquan.cn
+         日期: 2026-05-24
+================================================================
+
+一、主站 http://www.qzhiyuan.com/ (高考志愿填报系统)
+================================================================
+
+[严重] 1. CORS 跨域配置不当（CORS Misconfiguration）
+----------------------------------------------------------------
+www.qzhiyuan.com 的 API 接口存在严重的 CORS 配置缺陷：
+
+- 当请求携带 Origin 头时，Access-Control-Allow-Origin 反射回请求的 Origin
+- 同时设置了 Access-Control-Allow-Credentials: true
+- 这意味着攻击者可以在任意恶意网站上构造请求，利用已登录用户的
+  凭证发起跨域请求，窃取用户敏感数据或执行任意操作
+
+  验证：
+  $ curl -H "Origin: https://evil.com" https://www.qzhiyuan.com/api/cust/regAndLogin
+  -> Access-Control-Allow-Origin: https://evil.com
+  -> Access-Control-Allow-Credentials: true
+
+[严重] 2. MD5 签名盐值硬编码在前端 JavaScript 中
+----------------------------------------------------------------
+在 index.87b905cf.js 中发现微信登录的 MD5 签名盐值被硬编码：
+
+  盐值: 25raHVwZ2xnemhsbW9jdHBkbGRkZ2dka2pkdG92aHB3ZGVoYHBoAAA
+
+签名逻辑：Md5.hashStr(openid + phone + smsCode + salt)
+攻击者可以利用此盐值伪造 paramSign，绕过微信登录的签名校验。
+
+[高危] 3. 缺少关键安全响应头
+----------------------------------------------------------------
+缺失的安全头                  风险
+----------------------------------------
+X-Frame-Options              页面可被嵌入 iframe，存在点击劫持风险
+X-Content-Type-Options       存在 MIME 类型嗅探风险
+Content-Security-Policy      无 CSP 防护，可被执行 XSS 攻击
+Strict-Transport-Security    未强制 HSTS，存在 SSL 降级风险
+Referrer-Policy              请求可泄露 Referer 信息
+X-XSS-Protection             缺少浏览器 XSS 过滤器
+Permissions-Policy           未限制浏览器特性权限
+
+[高危] 4. 服务器版本信息泄露
+----------------------------------------------------------------
+nginx/1.24.0 版本号在错误页面和响应头中暴露。
+Server: nginx 信息可通过错误页面获取。
+
+[中危] 5. 前端 SPA 路由导致大量路径返回 200
+----------------------------------------------------------------
+所有未匹配路由均返回 SPA 主页面（2283 bytes），包括 /actuator/*
+等敏感路径，可能误导安全扫描或暴露内部路径信息。
+
+[中危] 6. 敏感 API 端点在前端 JS 中暴露
+----------------------------------------------------------------
+前端 JS 文件中包含了大量的 API 端点路由信息：
+- /cust/regAndLogin       注册/登录
+- /cust/autoLogin          自动登录
+- /cust/customer/updatePwd 修改密码
+- /cust/customer/queryAccountByPhone  账号查询
+- /cust/customer/getCustomerInfo      用户信息
+- /cust/addCust            添加客户
+...等 30+ 个端点
+
+
+二、后台 http://erp.gaokaoquan.cn/ + http://saas_api.gaokaoq.com/
+================================================================
+
+[严重] 1. CORS 配置严重不当
+----------------------------------------------------------------
+saas_api.gaokaoq.com 的 CORS 配置存在致命缺陷：
+
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Credentials: true
+  Access-Control-Allow-Methods: *
+  Access-Control-Allow-Headers: (几乎所有头)
+
+根据 W3C CORS 规范，同时设置 * 和 Credentials: true 是被明确禁止的。
+浏览器会直接阻止此组合，但配置本身反映了严重的配置错误。
+
+[严重] 2. 登录接口缺少速率限制
+----------------------------------------------------------------
+POST /admin/login 接口没有任何登录频率限制。
+虽然存在图形验证码，但验证码尺寸较小(120x36, 4位数字)，
+结合无速率限制的特点，存在暴力破解/OCR识别攻击可能性。
+
+验证：连续5次登录尝试均返回正常响应，无任何锁定或延迟。
+
+[高危] 3. 缺少所有安全响应头
+----------------------------------------------------------------
+erp.gaokaoquan.cn 和 saas_api.gaokaoq.com 完全没有安全相关的HTTP响应头：
+无 X-Frame-Options、无 CSP、无 HSTS、无 X-Content-Type-Options 等。
+
+[高危] 4. HTTP 明文传输，未强制 HTTPS
+----------------------------------------------------------------
+erp.gaokaoquan.cn 在 HTTP(80) 和 HTTPS(443) 均可访问，未做强制跳转。
+登录凭据可能在 HTTP 连接上被中间人窃取。
+
+[高危] 5. 框架信息泄露
+----------------------------------------------------------------
+- Laravel 框架可通过 Cookie 格式 (XSRF-TOKEN 特征) 识别
+- 响应 Set-Cookie: wxgk_session 暴露了 Session 机制
+- 默认 Laravel 欢迎页面未移除
+
+[中危] 6. 大量管理端 API 路由全部暴露在前端 JS
+----------------------------------------------------------------
+ERP 后台的所有 API 路由（100+ 个端点）在前端 JS 文件中全部明文列出：
+
+  财务管理:
+  - /admin/finance/index
+  - /admin/finance/recharge
+  - /admin/finance/withdraw
+  - /admin/finance/getSMSCode
+  - /admin/finance/checkSMSCode
+  - /admin/finance/withdrawList
+  - /admin/finance/withdrawCancel
+
+  支付接口:
+  - /admin/pay/alipay
+  - /admin/pay/weixin
+  - /admin/pay/aliOrderQuery
+  - /admin/pay/wxOrderQuery
+
+  用户管理:
+  - /admin/user/index
+  - /admin/user/edit
+  - /admin/user/export
+  - /admin/admin/delete
+
+  站点配置:
+  - /admin/site/config
+  - /admin/site/configEdit
+  - /admin/site/domainIndex
+  - /admin/site/domainEdit
+  - /admin/site/payIndex
+  - /admin/site/payEdit
+
+  其他:
+  - /admin/upload (文件上传)
+  - /admin/refresh (刷新缓存)
+  - /admin/me    (个人信息)
+  - /admin/enums (枚举值)
+  - /admin/sms/* (短信管理)
+  - /admin/wechatManager/* (微信管理)
+  - /admin/storeService/* (门店服务)
+  ...等共计 100+ 个端点
+
+[中危] 7. 验证码可被OCR识别
+----------------------------------------------------------------
+验证码接口 GET /captcha/api 返回 JSON 格式数据:
+  {"sensitive":false, "key":"...", "img":"data:image/png;base64,..."}
+
+- 验证码尺寸仅为 120x36 像素
+- 数字型验证码，字体清晰无干扰
+- 验证码图片以 base64 形式直接返回，便于程序解析
+- 无请求频率限制
+
+[低危] 8. OPTIONS 方法泄露支持的 HTTP 方法
+----------------------------------------------------------------
+OPTIONS /admin/login 返回:
+  Allow: GET, HEAD, POST, PUT, DELETE, OPTIONS, PATCH
+暴露了所有支持的 HTTP 方法。
+
+[低危] 9. CNZZ 统计代码泄露
+----------------------------------------------------------------
+页面中嵌入了 CNZZ 统计代码 (id: 1280095131)，可通过此 ID
+查询该站点的访问统计数据。
+
+
+三、修复建议（按优先级排序）
+================================================================
+
+P0 - 紧急修复:
+  1. 修复 CORS 配置：设置可信 Origin 白名单，不要反射 Origin，
+     不要同时使用 * 和 Credentials: true
+  2. 移除前端 JS 中的 MD5 签名盐值，签名逻辑放在服务端
+
+P1 - 尽快修复:
+  3. 添加安全响应头：CSP, X-Frame-Options, X-Content-Type-Options,
+     HSTS, Referrer-Policy, Permissions-Policy
+  4. 登录接口添加速率限制（IP + 账号维度）
+  5. 强制 HTTPS，所有 HTTP 请求 301 重定向到 HTTPS
+  6. 为 /admin/login 等敏感接口添加账户锁定机制
+
+P2 - 建议修复:
+  7. nginx 配置 server_tokens off 隐藏版本号
+  8. Cookie 设置 Secure, HttpOnly, SameSite=Lax 标志
+  9. 移除默认 Laravel 欢迎页面
+  10. 敏感 API 路由避免在前端 JS 中完整暴露，使用路由懒加载
+  11. 加强验证码复杂度（增加干扰线、扭曲、字符混合等）
+  12. 移除或保护 CNZZ 统计代码
+
+P3 - 安全加固:
+  13. 部署 Web 应用防火墙 (WAF)，当前主站使用阿里云 SLB 但未见 WAF
+  14. 定期进行安全渗透测试
+  15. 建立安全开发规范 (SSDLC)
+  16. nginx 升级到最新稳定版
+
+
+四、检测范围说明
+================================================================
+本次检测基于被动信息收集和轻量级安全测试，包括：
+  - HTTP 响应头安全分析
+  - 前端 JavaScript 代码审计
+  - API 端点枚举与访问控制测试
+  - CORS 配置检查
+  - 常见漏洞路径探测
+  - 服务器信息收集
+
+未进行的测试（需授权后方可开展）：
+  - SQL 注入深度测试
+  - XSS 跨站脚本攻击测试
+  - 文件上传漏洞利用
+  - 权限提升测试
+  - 业务逻辑漏洞测试
+  - 社会工程学攻击
+
+================================================================
+                         报告结束
+================================================================
