@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>更新日志 — 山海之凶兽</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Cinzel:wght@400;600;700&display=swap');
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0b0b0e;
+    --surface: #141418;
+    --border: rgba(255,255,255,0.06);
+    --text: #c4c4c8;
+    --text-dim: #6b6b72;
+    --accent: #c84b31;
+    --gold: #b8936e;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(11,11,14,0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px; height: 64px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  nav .logo { font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 700; letter-spacing: 4px; color: #fff; }
+  nav .logo span { color: var(--accent); }
+  nav a { color: var(--text-dim); text-decoration: none; font-size: 0.78rem; letter-spacing: 2px; transition: color 0.3s; }
+  nav a:hover { color: #fff; }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 120px 40px 80px; }
+  h1 { font-family: 'Cinzel', serif; font-size: 2rem; letter-spacing: 6px; color: #fff; margin-bottom: 8px; text-align: center; }
+  .subtitle { text-align: center; color: var(--text-dim); font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 64px; }
+
+  .timeline { position: relative; padding-left: 40px; }
+  .timeline::before {
+    content: '';
+    position: absolute; left: 12px; top: 0; bottom: 0;
+    width: 1px; background: var(--border);
+  }
+  .update-entry { position: relative; margin-bottom: 48px; }
+  .update-entry::before {
+    content: '';
+    position: absolute; left: -34px; top: 6px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .update-entry.major::before { width: 14px; height: 14px; left: -36px; top: 4px; }
+
+  .update-date {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .update-date .time { color: var(--text-dim); font-size: 0.65rem; letter-spacing: 1px; }
+  .update-title { font-size: 1.05rem; color: #fff; font-weight: 600; margin-bottom: 8px; }
+  .update-desc { font-size: 0.82rem; color: var(--text-dim); line-height: 1.8; }
+  .update-desc ul { margin-top: 6px; padding-left: 18px; }
+  .update-desc li { margin-bottom: 3px; }
+  .update-desc li::marker { color: var(--text-dim); }
+
+  footer { text-align: center; padding: 60px 40px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.65rem; letter-spacing: 2px; }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: #fff; }
+
+  @media (max-width: 900px) { .container { padding: 100px 20px 60px; } .timeline { padding-left: 28px; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">X<span>I</span>ONG</div>
+  <a href="index.html">← 返回首页</a>
+</nav>
+
+<div class="container">
+  <h1>更新日志</h1>
+  <p class="subtitle">CHANGELOG · 每次改动的精确记录</p>
+
+  <div class="timeline">
+
+    <div class="update-entry major">
+      <div class="update-date">2026-05-25 <span class="time">14:30:00</span></div>
+      <div class="update-title">v2.0 — 首页重构：搜索栏 + 卷轴导航</div>
+      <div class="update-desc">
+        <ul>
+          <li>首页精简为搜索栏入口，移除四大异兽长滚动展示</li>
+          <li>右上角新增「山海经卷轴」下拉菜单，按八卷分类</li>
+          <li>点击卷轴跳转到该卷完整异兽资料页，含返回按钮</li>
+          <li>搜索异兽自动定位到对应经卷并高亮显示</li>
+          <li>URL hash 路由支持浏览器前进/后退</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="update-entry major">
+      <div class="update-date">2026-05-25 <span class="time">13:15:00</span></div>
+      <div class="update-title">v1.9 — 异兽资料大幅扩容</div>
+      <div class="update-desc">
+        <ul>
+          <li>90+ 异兽数据全面扩充：增加外形细节、能力、预兆、文化典故</li>
+          <li>约30条异兽新增 📖 展开原文与考释（含《山海经》原文引用、历代注释）</li>
+          <li>按经卷分为八类：南山经(13)、西山经(19)、北山经(21)、东山经(11)、中山经(9)、海外经(21)、海内经(13)、大荒经(14)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="update-entry major">
+      <div class="update-date">2026-05-25 <span class="time">12:40:00</span></div>
+      <div class="update-title">v1.8 — 全异兽检索 + 百科区块</div>
+      <div class="update-desc">
+        <ul>
+          <li>创建 shanhaijing-data.js 数据库，收录90+异兽</li>
+          <li>搜索栏接入全异兽检索，返回详细信息</li>
+          <li>页面底部添加异兽百科板块，支持按经卷切换和关键词筛选</li>
+          <li>搜索结果显示概念设计/三维呈现链接（已有资源的异兽）</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="update-entry major">
+      <div class="update-date">2026-05-25 <span class="time">12:00:00</span></div>
+      <div class="update-title">v1.7 — ChatGPT 风格搜索栏 + AI 对话浮窗</div>
+      <div class="update-desc">
+        <ul>
+          <li>首页新增居中搜索栏（类似 OpenAI ChatGPT 首页）</li>
+          <li>右下角 AI 对话浮窗，内置知识问答</li>
+          <li>搜索栏/浮窗联动：搜索问题自动展开聊天面板</li>
+          <li>支持推荐问题快捷点击、打字动画效果</li>
+          <li>桌面端支持键盘导航（Esc关闭、方向键切换图片）</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="update-entry major">
+      <div class="update-date">2026-05-25 <span class="time">11:45:00</span></div>
+      <div class="update-title">v1.6 — 四凶汇总单页 index.html</div>
+      <div class="update-desc">
+        <ul>
+          <li>创建 index.html 汇总页，四大凶兽集中展示（长滚动）</li>
+          <li>穷奇为全屏Hero，其余为紧凑标题</li>
+          <li>统一 Lightbox 支持18张图片左右切换、键盘导航</li>
+          <li>固定导航栏锚点跳转至各凶兽区块</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="update-entry">
+      <div class="update-date">2026-05-25 <span class="time">11:30:00</span></div>
+      <div class="update-title">v1.5 — 饕餮/梼杌/混沌展示页 + 穷奇三视图更新</div>
+      <div class="update-desc">
+        <ul>
+          <li>创建 taotie-portfolio.html（饕餮 002）</li>
+          <li>创建 taowu-portfolio.html（梼杌 003）</li>
+          <li>创建 hundun-portfolio.html（混沌 004）</li>
+          <li>穷奇页新增三视图（概念图 + 3个视图）</li>
+          <li>素材从桌面 123456 文件夹按异兽分类整理至 assets/</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="update-entry">
+      <div class="update-date">2026-05-25 <span class="time">11:15:00</span></div>
+      <div class="update-title">v1.4 — 网站名称确定</div>
+      <div class="update-desc">
+        <ul>
+          <li>品牌名「XIONG」（I为红色）</li>
+          <li>导航栏、标题、页脚统一更新</li>
+          <li>页面标题改为「山海之凶兽」</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="update-entry">
+      <div class="update-date">2026-05-25 <span class="time">11:00:00</span></div>
+      <div class="update-title">v1.0 — 穷奇概念展示页初版</div>
+      <div class="update-desc">
+        <ul>
+          <li>创建 qiongqi-portfolio.html</li>
+          <li>暗黑画廊风格：深色背景 + 红色强调(#c84b31) + 金色辅助(#b8936e)</li>
+          <li>字体方案：Cinzel(英文标题) + Noto Sans SC(中文正文)</li>
+          <li>页面结构：固定导航 → 全屏Hero → 概念设计 → 三维呈现 → 产品规格 → 创作笔记 → Lightbox</li>
+          <li>响应式布局适配移动端</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <a href="index.html">← 返回首页</a> &nbsp;·&nbsp; &copy; 2026 XIONG · 山海之凶兽
+</footer>
+
+</body>
+</html>
