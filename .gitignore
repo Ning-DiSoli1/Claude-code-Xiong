@@ -3,3 +3,32 @@ node_modules/
 Thumbs.db
 *.log
 .claude/settings.local.json
+
+# Local credentials and candidate inputs (never commit real values)
+.env
+.env.*
+!.env.example
+candidate.local.json
+*.private.json
+/private-data/
+
+# Generated publication and local audit output
+/dist/
+/dist-*/
+/_site/
+/.jekyll-cache/
+/audit/
+
+# Existing research artifacts: these rules do NOT untrack committed files.
+# Migrate valuable material privately before removing it from the public tree.
+/123/
+/pages/
+/history_pages/
+/page1*.png
+/page1_raw.bin
+/captcha.png
+/*.traineddata
+/*.xlsx
+/*.xls
+/*.pdf
+/安全漏洞检测报告.*
