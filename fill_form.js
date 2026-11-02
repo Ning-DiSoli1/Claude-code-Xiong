@@ -1,3 +1,5 @@
+const { readCandidateProfile } = require('./candidate-profile');
+const candidate = readCandidateProfile(process.argv[2] || process.env.CANDIDATE_CONFIG);
 const XLSX = require('xlsx');
 
 // Read workbook
@@ -6,16 +8,16 @@ const wb = XLSX.readFile('2026志愿填报样表（V4.0） (1).xlsx');
 // ==================== STEP 1: Fill 考生基本信息 ====================
 const infoSheet = wb.Sheets['考生基本信息'];
 
-infoSheet['B2'] = { t: 's', v: '宁' };
-infoSheet['D2'] = { t: 's', v: '苗族' };
-infoSheet['F2'] = { t: 's', v: '物化地' };
-infoSheet['B3'] = { t: 's', v: '男' };
-infoSheet['F3'] = { t: 's', v: '贵阳观山湖区' };
-infoSheet['B9'] = { t: 's', v: '物理' };
-infoSheet['B10'] = { t: 's', v: '化学' };
-infoSheet['B11'] = { t: 's', v: '地理' };
-infoSheet['B13'] = { t: 'n', v: 570 };
-infoSheet['D13'] = { t: 'n', v: 15689 };
+infoSheet['B2'] = { t: 's', v: candidate.name };
+infoSheet['D2'] = { t: 's', v: candidate.ethnicity };
+infoSheet['F2'] = { t: 's', v: candidate.subjectCombination };
+infoSheet['B3'] = { t: 's', v: candidate.gender };
+infoSheet['F3'] = { t: 's', v: candidate.region };
+infoSheet['B9'] = { t: 's', v: candidate.subjects[0] };
+infoSheet['B10'] = { t: 's', v: candidate.subjects[1] };
+infoSheet['B11'] = { t: 's', v: candidate.subjects[2] };
+infoSheet['B13'] = { t: 'n', v: candidate.totalScore };
+infoSheet['D13'] = { t: 'n', v: candidate.rank };
 
 // ==================== STEP 2: Filter all compatible entries ====================
 const planSheet = wb.Sheets['普通批招生计划总计280165人'];

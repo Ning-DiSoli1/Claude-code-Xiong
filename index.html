@@ -888,10 +888,10 @@
 <section id="beast-encyclopedia" class="section-inner" style="display:none;">
   <div class="section-header">
     <h2>异兽百科全书</h2>
-    <p>ENCYCLOPEDIA · 《山海经》收录异兽 100+</p>
+    <p>ENCYCLOPEDIA · 异兽资料库收录 <span id="beast-count"></span> 条</p>
   </div>
   <div style="max-width:900px;margin:0 auto 32px;">
-    <input type="text" id="encyclopediaSearch" placeholder="搜索异兽名称…" oninput="filterEncyclopedia()"
+    <input type="text" id="encyclopediaSearch" placeholder="搜索异兽名称…" oninput="searchAndShow(this.value)"
       style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:14px 24px;color:#fff;font-size:0.9rem;font-family:inherit;outline:none;transition:border-color 0.3s;"
       onfocus="this.style.borderColor='rgba(200,75,49,0.5)'" onblur="this.style.borderColor=''">
   </div>
@@ -914,6 +914,7 @@
 
 <script src="shanhaijing-data.js"></script>
 <script>
+document.getElementById('beast-count').textContent = SHANHAIJING_BEASTS.length;
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
 const lightboxCounter = document.getElementById('lightbox-counter');
@@ -991,7 +992,7 @@ chatBtn.addEventListener('click', () => {
 const knowledge = {
   hello: '你好！我是山海之凶兽的 AI 助手。你可以搜索《山海经》中的任何异兽，比如输入异兽名称查询详细资料。已有概念图和三视图的异兽有：穷奇、饕餮、梼杌、混沌。',
   四凶: '上古四凶指穷奇、饕餮、梼杌、混沌。本系列以写实风格重构这四个经典异兽，探索中国神话IP在设计师玩具领域的可能性。穷奇（虎身双翼）、饕餮（贪食巨兽）、梼杌（顽固凶兽）、混沌（无面无形）均已有概念设计页面。',
-  山海经: '《山海经》是中国先秦古籍，记载了大量神话地理和奇珍异兽，全书共十八卷，分山经五卷、海经十三卷。本数据库已收录100+异兽，涵盖南山经、西山经、北山经、东山经、中山经、海外经、海内经、大荒经。本系列的设计灵感均来源于此。',
+  山海经: '《山海经》是中国先秦古籍，记载了大量神话地理和奇珍异兽，全书共十八卷，分山经五卷、海经十三卷。本数据库已收录' + SHANHAIJING_BEASTS.length + '条异兽资料，涵盖山经、海经、大荒经，并补充《神异经》等典籍中的相关形象。',
   手办: '本系列已有作品均为 PU 树脂材质、手工上色的设计师艺术玩具，旨在将中国神话IP与现代数字雕刻技术相结合。穷奇已有三维渲染预览。',
 };
 
@@ -1019,7 +1020,8 @@ function formatBeastResult(b) {
   const links = [];
   if (b.hasArt) links.push('<a href="' + (b.page || '#') + '" target="_blank" style="color:#c84b31;text-decoration:underline;">查看概念设计</a>');
   if (b.has3D) links.push('<a href="' + (b.page || '#') + '#threed" target="_blank" style="color:#c84b31;text-decoration:underline;">查看三维呈现</a>');
-  if (!b.hasArt && !b.has3D) links.push('<a href="#beast-encyclopedia" onclick="document.getElementById(\'encyclopediaSearch\').value=\'' + b.name + '\';filterEncyclopedia();" style="color:var(--text-dim);text-decoration:underline;">跳转到资料位置</a>');
+  const chapter = BEAST_CHAPTERS.find(ch => ch.beasts.includes(b));
+  if (!b.hasArt && !b.has3D && chapter) links.push('<a href="#chapter-' + encodeURIComponent(chapter.name) + '" style="color:var(--text-dim);text-decoration:underline;">跳转到资料位置</a>');
   if (links.length) txt += '\n' + links.join(' · ');
   return txt;
 }
@@ -1038,13 +1040,19 @@ function getResponse(q) {
   if (/山海经|神话/.test(q) && q.length > 3) return knowledge.山海经;
   if (/手办|玩具|材质|规格|限量|高度/.test(q)) return knowledge.手办;
   if (/你好|嗨|hi|hello/i.test(l) && q.length < 6) return knowledge.hello;
-  return '在《山海经》数据库中未找到匹配的异兽。\n\n你可以尝试：\n• 输入异兽名称（如"九尾狐""毕方""烛龙""应龙"等）\n• "穷奇" "饕餮" "梼杌" "混沌" — 已有概念设计\n• "四凶" — 了解四凶概况\n• "山海经" — 了解典籍背景\n\n你也可以在页面底部的<strong>异兽百科全书</strong>中浏览全部收录异兽。';
+  return '在《山海经》数据库中未找到匹配的异兽。\n\n你可以尝试：\n• 输入异兽名称（如"九尾狐""毕方""烛龙""应龙"等）\n• "穷奇" "饕餮" "梼杌" "混沌" — 已有概念设计\n• "四凶" — 了解四凶概况\n• "山海经" — 了解典籍背景\n\n你也可以通过页面顶部的<strong>山海经卷轴</strong>浏览全部收录资料。';
 }
 
 function addMsg(text, type) {
   const div = document.createElement('div');
   div.className = 'msg ' + type;
-  div.innerHTML = text.replace(/\n/g, '<br>');
+  if (type === 'user') {
+    div.textContent = text;
+    div.style.whiteSpace = 'pre-wrap';
+  } else {
+    // Only markup generated from the reviewed, local knowledge base is trusted.
+    div.innerHTML = text.replace(/\n/g, '<br>');
+  }
   chatMessages.appendChild(div);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return div;

@@ -1,3 +1,5 @@
+const { readCandidateProfile } = require('./candidate-profile');
+const candidate = readCandidateProfile(process.argv[2] || process.env.CANDIDATE_CONFIG);
 const XLSX = require('xlsx');
 
 const planWb = XLSX.readFile('c:/Users/宁/Desktop/ZhiYuan/2026志愿填报样表（V4.0） (1).xlsx');
@@ -134,11 +136,11 @@ r=F('上海师范大学天华学院','金融数学');entries.push(E('2058','上�
 r=F('上海杉达学院','金融学(CFA方向)');entries.push(E('2055','上海杉达学院',r?r[11]:'501',r?r[12]:'金融学(CFA方向)','不限',r?r[15]:2,488,41500,'上海','民办'));
 
 // ============ FILL TEMPLATE ============
-outData[1][0] = '姓名：宁同学  性  别：   民族：苗族  准考证号：   高考成绩：570  位次：15689  选科组合：物化生';
-outData[1][7] = '570';
-outData[1][8] = '15689';
-outData[1][9] = '570';
-outData[1][10] = '15689';
+outData[1][0] = `姓名：${candidate.name}  性别：${candidate.gender}  民族：${candidate.ethnicity}  准考证号：   高考成绩：${candidate.totalScore}  位次：${candidate.rank}  选科组合：${candidate.subjectCombination}`;
+outData[1][7] = String(candidate.totalScore);
+outData[1][8] = String(candidate.rank);
+outData[1][9] = String(candidate.totalScore);
+outData[1][10] = String(candidate.rank);
 
 for (let i = 0; i < 96; i++) {
   const rowIdx = 6 + (i % 48);

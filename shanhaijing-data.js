@@ -114,6 +114,7 @@ const BEAST_CHAPTERS = [
   { name:"海外经", beasts: SHANHAIJING_BEASTS.filter(b => b.chapter.startsWith("海外")) },
   { name:"海内经", beasts: SHANHAIJING_BEASTS.filter(b => b.chapter.startsWith("海内")) },
   { name:"大荒经", beasts: SHANHAIJING_BEASTS.filter(b => b.chapter.startsWith("大荒")) },
+  { name:"神异经", beasts: SHANHAIJING_BEASTS.filter(b => b.chapter.startsWith("神异经")) },
 ];
 
 if (typeof module !== 'undefined' && module.exports) {
